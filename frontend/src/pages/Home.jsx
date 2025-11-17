@@ -1,22 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import postService from '../services/postService';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import PostCard from '../components/PostCard';
-import Navbar from '../components/Navbar';
-import { Search, Plus } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import postService from "../services/postService";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import PostCard from "../components/PostCard";
+import Navbar from "../components/Navbar";
+import { Search, Plus } from "lucide-react";
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [filters, setFilters] = useState({
-    search: '',
-    category: '',
-    status: ''
+    search: "",
+    category: "all",
+    status: "available", // Default to show only available posts
   });
   const { user } = useAuth();
 
@@ -25,13 +31,16 @@ export default function Home() {
       setLoading(true);
       const params = {};
       if (filters.search) params.search = filters.search;
-      if (filters.category) params.category = filters.category;
-      if (filters.status) params.status = filters.status;
+      if (filters.category && filters.category !== "all")
+        params.category = filters.category;
+      // Don't send status param if "all" to show everything
+      if (filters.status && filters.status !== "all")
+        params.status = filters.status;
 
       const data = await postService.getPosts(params);
       setPosts(data.posts || []);
     } catch (err) {
-      setError('Failed to load posts');
+      setError("Failed to load posts");
       console.error(err);
     } finally {
       setLoading(false);
@@ -50,17 +59,24 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">ShareCare Community</h1>
-          <p className="text-gray-600">Share items, knowledge, and support with your community</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            ShareCare Community
+          </h1>
+          <p className="text-gray-600">
+            Share items, knowledge, and support with your community
+          </p>
         </div>
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col md:flex-row gap-4"
+          >
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -68,27 +84,41 @@ export default function Home() {
                 placeholder="Search posts..."
                 className="pl-10"
                 value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value })
+                }
               />
             </div>
-            <Select value={filters.category} onValueChange={(value) => setFilters({ ...filters, category: value })}>
+            <Select
+              value={filters.category}
+              onValueChange={(value) =>
+                setFilters({ ...filters, category: value })
+              }
+            >
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="items">Items</SelectItem>
                 <SelectItem value="knowledge">Knowledge</SelectItem>
-                <SelectItem value="emotional-support">Emotional Support</SelectItem>
+                <SelectItem value="emotional-support">
+                  Emotional Support
+                </SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
+            <Select
+              value={filters.status}
+              onValueChange={(value) =>
+                setFilters({ ...filters, status: value })
+              }
+            >
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="available">Available</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="donated">Donated</SelectItem>

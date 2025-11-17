@@ -1,8 +1,8 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from './ui/button';
-import { Heart, LogOut, User } from 'lucide-react';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { Button } from "./ui/button";
+import { Heart, LogOut, User, MessageSquare } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -10,7 +10,7 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -26,6 +26,12 @@ export default function Navbar() {
             {user ? (
               <>
                 <span className="text-gray-700">Hello, {user.username}</span>
+                <Link to="/chat">
+                  <Button variant="outline" size="sm">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Messages
+                  </Button>
+                </Link>
                 {user.isAdmin && (
                   <Link to="/admin">
                     <Button variant="outline" size="sm">
