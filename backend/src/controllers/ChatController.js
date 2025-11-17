@@ -1,15 +1,19 @@
-import ChatService from '../services/ChatService.js';
+import ChatService from "../services/ChatService.js";
 
 class ChatController {
   async getOrCreateChat(req, res, next) {
     try {
-      const { otherUserId } = req.body;
+      const { otherUserId, postId } = req.body;
 
       if (!otherUserId) {
-        return res.status(400).json({ message: 'Other user ID is required' });
+        return res.status(400).json({ message: "Other user ID is required" });
       }
 
-      const chat = await ChatService.getOrCreateChat(req.user.id, otherUserId);
+      const chat = await ChatService.getOrCreateChat(
+        req.user.id,
+        otherUserId,
+        postId
+      );
 
       res.json({ chat });
     } catch (error) {
@@ -34,14 +38,20 @@ class ChatController {
       const { chatId, content } = req.body;
 
       if (!chatId || !content) {
-        return res.status(400).json({ message: 'Chat ID and content are required' });
+        return res
+          .status(400)
+          .json({ message: "Chat ID and content are required" });
       }
 
-      const message = await ChatService.sendMessage(chatId, req.user.id, content);
+      const message = await ChatService.sendMessage(
+        chatId,
+        req.user.id,
+        content
+      );
 
       res.status(201).json({
-        message: 'Message sent successfully',
-        data: message
+        message: "Message sent successfully",
+        data: message,
       });
     } catch (error) {
       next(error);
@@ -53,7 +63,11 @@ class ChatController {
       const { page = 1, limit = 50 } = req.query;
       const options = { page: parseInt(page), limit: parseInt(limit) };
 
-      const result = await ChatService.getChatMessages(req.params.chatId, req.user.id, options);
+      const result = await ChatService.getChatMessages(
+        req.params.chatId,
+        req.user.id,
+        options
+      );
       res.json(result);
     } catch (error) {
       next(error);

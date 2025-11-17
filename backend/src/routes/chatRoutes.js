@@ -1,14 +1,37 @@
-import express from 'express';
-import ChatController from '../controllers/ChatController.js';
-import { authenticate } from '../middleware/auth.js';
-import { apiLimiter } from '../middleware/rateLimiter.js';
+import express from "express";
+import ChatController from "../controllers/ChatController.js";
+import { authenticate } from "../middleware/auth.js";
+import { apiLimiter } from "../middleware/rateLimiter.js";
+import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
 // All routes are protected
-router.post('/chat', apiLimiter, authenticate, ChatController.getOrCreateChat);
-router.get('/chats', apiLimiter, authenticate, ChatController.getUserChats);
-router.post('/message', apiLimiter, authenticate, ChatController.sendMessage);
-router.get('/chat/:chatId/messages', apiLimiter, authenticate, ChatController.getChatMessages);
+router.post("/", apiLimiter, authenticate, ChatController.getOrCreateChat);
+router.get("/", apiLimiter, authenticate, ChatController.getUserChats);
+router.post("/message", apiLimiter, authenticate, ChatController.sendMessage);
+router.get(
+  "/:chatId/messages",
+  apiLimiter,
+  authenticate,
+  ChatController.getChatMessages
+);
+router.post("/upload", authenticate, upload.single("file"), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    res.json({
+      fileUrl: `/uploads/${req.file.filename}`,
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "File upload failed", error: error.message });
+  }
+});
 
 export default router;
