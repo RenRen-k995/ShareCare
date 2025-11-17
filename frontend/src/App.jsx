@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import CreatePost from './pages/CreatePost';
 import PostDetail from './pages/PostDetail';
+import AdminPanel from './pages/AdminPanel';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -15,6 +16,16 @@ function ProtectedRoute({ children }) {
   }
   
   return user ? children : <Navigate to="/login" />;
+}
+
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+  
+  return user?.isAdmin ? children : <Navigate to="/" />;
 }
 
 function App() {
@@ -31,6 +42,11 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/posts/:id" element={<PostDetail />} />
+          <Route path="/admin" element={
+            <AdminRoute>
+              <AdminPanel />
+            </AdminRoute>
+          } />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
