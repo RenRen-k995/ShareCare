@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
 import commentService from "../services/commentService";
 import chatService from "../services/chatService";
+import DOMPurify from 'dompurify';
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import {
@@ -224,7 +225,7 @@ export default function PostDetail() {
 
           <CardContent className="space-y-6">
             <div className="prose prose-sm sm:prose lg:prose-lg max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: post.description }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.description) }} />
             </div>
 
             <div className="flex gap-4 pt-4 border-t">

@@ -7,6 +7,7 @@ import { Heart, MessageCircle, Flag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import postService from '../services/postService';
 import reportService from '../services/reportService';
+import { extractTextFromHtml } from '../utils/htmlUtils';
 
 export default function PostCard({ post, onUpdate }) {
   const { user } = useAuth();
@@ -93,11 +94,7 @@ export default function PostCard({ post, onUpdate }) {
         </div>
         <CardTitle className="line-clamp-1">{post.title}</CardTitle>
         <CardDescription className="line-clamp-2">
-          <div 
-            dangerouslySetInnerHTML={{ 
-              __html: post.description?.replace(/<[^>]*>/g, '').substring(0, 200) + (post.description?.length > 200 ? '...' : '')
-            }} 
-          />
+          {extractTextFromHtml(post.description, 200)}
         </CardDescription>
       </CardHeader>
       <CardContent>
