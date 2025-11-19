@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
 import {
   Dialog,
   DialogContent,
@@ -7,56 +8,110 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import { Button } from './ui/button';
+import getCroppedImg from '../utils/cropImage';
 
 /**
  * CropModal Component
- * Modal for editing cover image with cropping functionality
- * Follows SKPORT design style with cyan accent (#00E0C6)
+ * Modal for editing cover image with functional cropping using react-easy-crop
+ * Fixed aspect ratio: 2.5:1 (wide banner style)
  */
-export default function CropModal({ isOpen, onClose, onConfirm, imageUrl }) {
+export default function CropModal({ isOpen, onClose, onConfirm, imageUrl, onReupload }) {
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleConfirm = useCallback(async () => {
+    try {
+      const croppedImageUrl = await getCroppedImg(imageUrl, croppedAreaPixels);
+      onConfirm(croppedImageUrl);
+    } catch (e) {
+      console.error('Error cropping image:', e);
+    }
+  }, [imageUrl, croppedAreaPixels, onConfirm]);
+
+  const handleReupload = () => {
+    if (onReupload) {
+      onReupload();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Edit Cover</DialogTitle>
         </DialogHeader>
         
-        <div className="relative flex items-center justify-center bg-gray-100 rounded-lg p-8 min-h-[400px]">
+        {/* Cropper Area */}
+        <div className="relative w-full h-[400px] bg-gray-900 rounded-lg overflow-hidden">
           {imageUrl ? (
-            <div className="relative max-w-full max-h-[500px]">
-              <img
-                src={imageUrl}
-                alt="Cover preview"
-                className="max-w-full max-h-[500px] object-contain"
-              />
-              {/* Cyan border overlay to represent cropping area */}
-              <div className="absolute inset-0 border-4 border-[#00E0C6] rounded-lg pointer-events-none" 
-                   style={{
-                     boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
-                   }}>
-              </div>
-            </div>
+            <Cropper
+              image={imageUrl}
+              crop={crop}
+              zoom={zoom}
+              aspect={2.5}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+              style={{
+                containerStyle: {
+                  backgroundColor: '#1f2937',
+                },
+                cropAreaStyle: {
+                  border: '2px solid #22d3ee',
+                },
+              }}
+            />
           ) : (
-            <div className="text-gray-400 text-center">
+            <div className="flex items-center justify-center h-full text-gray-400">
               <p>No image selected</p>
             </div>
           )}
         </div>
         
-        <DialogFooter className="mt-4">
+        {/* Zoom Control */}
+        <div className="space-y-2 px-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">Zoom</label>
+            <span className="text-sm text-gray-500">{Math.round(zoom * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={3}
+            step={0.1}
+            value={zoom}
+            onChange={(e) => setZoom(parseFloat(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+          />
+        </div>
+        
+        <DialogFooter className="mt-4 flex justify-between items-center">
           <Button 
             variant="outline" 
-            onClick={onClose}
-            className="mr-2"
+            onClick={handleReupload}
+            className="mr-auto"
           >
-            Cancel
+            Reupload
           </Button>
-          <Button 
-            onClick={onConfirm}
-            className="bg-[#00E0C6] hover:bg-[#00c4ae] text-white"
-          >
-            Confirm
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirm}
+              className="bg-cyan-400 hover:bg-cyan-500 text-white"
+            >
+              Confirm
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

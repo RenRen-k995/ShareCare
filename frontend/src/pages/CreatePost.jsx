@@ -66,9 +66,17 @@ export default function CreatePost() {
     input.click();
   };
 
-  const handleCropConfirm = () => {
-    setFormData({ ...formData, coverImageUrl: coverImagePreview });
+  const handleCropConfirm = (croppedImageUrl) => {
+    setFormData({ ...formData, coverImageUrl: croppedImageUrl });
     setIsCropModalOpen(false);
+  };
+
+  const handleReupload = () => {
+    setIsCropModalOpen(false);
+    // Trigger file input again
+    setTimeout(() => {
+      handleAddCover();
+    }, 100);
   };
 
   const handleSubmit = async (e) => {
@@ -174,16 +182,16 @@ export default function CreatePost() {
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Cover Image</label>
                 {formData.coverImageUrl ? (
-                  <div className="relative rounded-lg overflow-hidden">
+                  <div className="relative rounded-lg overflow-hidden" style={{ aspectRatio: '2.5/1' }}>
                     <img
                       src={formData.coverImageUrl}
                       alt="Cover"
-                      className="w-full h-64 object-cover"
+                      className="w-full h-full object-cover"
                     />
                     <button
                       type="button"
                       onClick={handleAddCover}
-                      className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors"
+                      className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors text-sm"
                     >
                       Change Cover
                     </button>
@@ -192,11 +200,13 @@ export default function CreatePost() {
                   <button
                     type="button"
                     onClick={handleAddCover}
-                    className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-cyan-400 hover:bg-gray-50 transition-colors"
+                    className="w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-cyan-400 hover:bg-gray-50 transition-colors"
+                    style={{ aspectRatio: '2.5/1', minHeight: '200px' }}
                   >
                     <div className="text-center">
                       <Image className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                       <p className="text-sm text-gray-600">Add Cover</p>
+                      <p className="text-xs text-gray-400 mt-1">Recommended: 2.5:1 aspect ratio</p>
                     </div>
                   </button>
                 )}
@@ -277,6 +287,7 @@ export default function CreatePost() {
         isOpen={isCropModalOpen}
         onClose={() => setIsCropModalOpen(false)}
         onConfirm={handleCropConfirm}
+        onReupload={handleReupload}
         imageUrl={coverImagePreview}
       />
     </div>
