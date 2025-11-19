@@ -6,19 +6,9 @@ import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import Navbar from '../components/Navbar';
 import CropModal from '../components/CropModal';
+import RichTextEditor from '../components/RichTextEditor';
 import {
-  Undo,
-  Redo,
   Image,
-  Video,
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  Link2,
-  Quote,
-  Code,
   Calendar,
 } from 'lucide-react';
 
@@ -43,8 +33,8 @@ export default function CreatePost() {
     setFormData({ ...formData, title: e.target.value });
   };
 
-  const handleContentChange = (e) => {
-    setFormData({ ...formData, content: e.target.value });
+  const handleContentChange = (html) => {
+    setFormData({ ...formData, content: html });
   };
 
   const handleAddCover = () => {
@@ -107,21 +97,6 @@ export default function CreatePost() {
     return null;
   }
 
-  const toolbarButtons = [
-    { icon: Undo, label: 'Undo' },
-    { icon: Redo, label: 'Redo' },
-    { icon: Image, label: 'Image' },
-    { icon: Video, label: 'Video' },
-    { icon: Bold, label: 'Bold' },
-    { icon: Italic, label: 'Italic' },
-    { icon: Underline, label: 'Underline' },
-    { icon: List, label: 'Bullet List' },
-    { icon: ListOrdered, label: 'Numbered List' },
-    { icon: Link2, label: 'Link' },
-    { icon: Quote, label: 'Quote' },
-    { icon: Code, label: 'Code' },
-  ];
-
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -146,34 +121,11 @@ export default function CreatePost() {
               required
             />
 
-            {/* Rich Text Toolbar with Bottom Border */}
-            <div className="flex items-center gap-2 py-4 border-b border-gray-200">
-              {toolbarButtons.map((button, index) => {
-                const Icon = button.icon;
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    title={button.label}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    onClick={() => {
-                      // Placeholder for toolbar actions
-                      console.log(`${button.label} clicked`);
-                    }}
-                  >
-                    <Icon className="w-5 h-5 text-gray-600" />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Content Area with Border */}
-            <textarea
-              placeholder="Start writing your content..."
-              value={formData.content}
+            {/* Rich Text Editor */}
+            <RichTextEditor
+              content={formData.content}
               onChange={handleContentChange}
-              className="w-full min-h-[400px] text-lg bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent outline-none resize-none"
-              required
+              placeholder="Start writing your content..."
             />
 
             {/* Settings Area */}

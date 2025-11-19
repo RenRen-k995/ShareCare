@@ -223,10 +223,8 @@ export default function PostDetail() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <div className="prose max-w-none">
-              <p className="text-gray-700 whitespace-pre-wrap">
-                {post.description}
-              </p>
+            <div className="prose prose-sm sm:prose lg:prose-lg max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: post.description }} />
             </div>
 
             <div className="flex gap-4 pt-4 border-t">

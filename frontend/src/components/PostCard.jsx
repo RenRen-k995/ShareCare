@@ -92,7 +92,13 @@ export default function PostCard({ post, onUpdate }) {
           )}
         </div>
         <CardTitle className="line-clamp-1">{post.title}</CardTitle>
-        <CardDescription className="line-clamp-2">{post.description}</CardDescription>
+        <CardDescription className="line-clamp-2">
+          <div 
+            dangerouslySetInnerHTML={{ 
+              __html: post.description?.replace(/<[^>]*>/g, '').substring(0, 200) + (post.description?.length > 200 ? '...' : '')
+            }} 
+          />
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between text-sm text-gray-600">
