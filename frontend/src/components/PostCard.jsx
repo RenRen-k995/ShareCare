@@ -7,6 +7,7 @@ import { Heart, MessageCircle, Flag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import postService from '../services/postService';
 import reportService from '../services/reportService';
+import { extractTextFromHtml } from '../utils/htmlUtils';
 
 export default function PostCard({ post, onUpdate }) {
   const { user } = useAuth();
@@ -92,7 +93,9 @@ export default function PostCard({ post, onUpdate }) {
           )}
         </div>
         <CardTitle className="line-clamp-1">{post.title}</CardTitle>
-        <CardDescription className="line-clamp-2">{post.description}</CardDescription>
+        <CardDescription className="line-clamp-2">
+          {extractTextFromHtml(post.description, 200)}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between text-sm text-gray-600">
