@@ -66,9 +66,17 @@ export default function CreatePost() {
     input.click();
   };
 
-  const handleCropConfirm = () => {
-    setFormData({ ...formData, coverImageUrl: coverImagePreview });
+  const handleCropConfirm = (croppedImageUrl) => {
+    setFormData({ ...formData, coverImageUrl: croppedImageUrl });
     setIsCropModalOpen(false);
+  };
+
+  const handleReupload = () => {
+    setIsCropModalOpen(false);
+    // Trigger file input again
+    setTimeout(() => {
+      handleAddCover();
+    }, 100);
   };
 
   const handleSubmit = async (e) => {
@@ -118,28 +126,28 @@ export default function CreatePost() {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      <div className="flex">
-        {/* Main Content Area */}
-        <div className="flex-1 max-w-5xl mx-auto px-8 py-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Main Container Wrapper - Centered Card Layout */}
+      <div className="flex justify-center py-8 px-4">
+        <div className="w-full max-w-4xl border border-gray-200 rounded-xl shadow-sm bg-white">
+          <form onSubmit={handleSubmit} className="p-8 space-y-4">
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
-            {/* Large Transparent Title Input */}
+            {/* Title Input with Border */}
             <input
               type="text"
               placeholder="Title"
               value={formData.title}
               onChange={handleTitleChange}
-              className="w-full text-5xl font-bold bg-transparent border-none outline-none placeholder-gray-300 focus:ring-0 px-0"
+              className="w-full text-4xl font-bold bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent outline-none"
               required
             />
 
-            {/* Rich Text Toolbar */}
-            <div className="flex items-center gap-2 py-4 border-y border-gray-200">
+            {/* Rich Text Toolbar with Bottom Border */}
+            <div className="flex items-center gap-2 py-4 border-b border-gray-200">
               {toolbarButtons.map((button, index) => {
                 const Icon = button.icon;
                 return (
@@ -159,12 +167,12 @@ export default function CreatePost() {
               })}
             </div>
 
-            {/* Content Area (Rich Text Editor Placeholder) */}
+            {/* Content Area with Border */}
             <textarea
               placeholder="Start writing your content..."
               value={formData.content}
               onChange={handleContentChange}
-              className="w-full min-h-[400px] text-lg bg-transparent border-none outline-none placeholder-gray-300 focus:ring-0 resize-none px-0"
+              className="w-full min-h-[400px] text-lg bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent outline-none resize-none"
               required
             />
 
@@ -174,16 +182,16 @@ export default function CreatePost() {
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Cover Image</label>
                 {formData.coverImageUrl ? (
-                  <div className="relative rounded-lg overflow-hidden">
+                  <div className="relative rounded-lg overflow-hidden" style={{ aspectRatio: '2.5/1' }}>
                     <img
                       src={formData.coverImageUrl}
                       alt="Cover"
-                      className="w-full h-64 object-cover"
+                      className="w-full h-full object-cover"
                     />
                     <button
                       type="button"
                       onClick={handleAddCover}
-                      className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors"
+                      className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors text-sm"
                     >
                       Change Cover
                     </button>
@@ -192,11 +200,13 @@ export default function CreatePost() {
                   <button
                     type="button"
                     onClick={handleAddCover}
-                    className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-[#00E0C6] hover:bg-gray-50 transition-colors"
+                    className="w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-cyan-400 hover:bg-gray-50 transition-colors"
+                    style={{ aspectRatio: '2.5/1', minHeight: '200px' }}
                   >
                     <div className="text-center">
                       <Image className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                       <p className="text-sm text-gray-600">Add Cover</p>
+                      <p className="text-xs text-gray-400 mt-1">Recommended: 2.5:1 aspect ratio</p>
                     </div>
                   </button>
                 )}
@@ -228,7 +238,7 @@ export default function CreatePost() {
                   id="isOriginal"
                   checked={formData.isOriginal}
                   onChange={(e) => setFormData({ ...formData, isOriginal: e.target.checked })}
-                  className="w-4 h-4 text-[#00E0C6] border-gray-300 rounded focus:ring-[#00E0C6]"
+                  className="w-4 h-4 text-cyan-400 border-gray-300 rounded focus:ring-cyan-400"
                 />
                 <label htmlFor="isOriginal" className="text-sm text-gray-700">
                   This is original content
@@ -245,13 +255,13 @@ export default function CreatePost() {
                   type="datetime-local"
                   value={formData.scheduledDate}
                   onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00E0C6] focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
                 />
               </div>
             </div>
 
-            {/* Publish Button - Fixed at Bottom Right */}
-            <div className="fixed bottom-8 right-8 flex gap-3">
+            {/* Action Bar - Inside Container at Bottom */}
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
               <Button
                 type="button"
                 variant="outline"
@@ -263,7 +273,7 @@ export default function CreatePost() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-[#00E0C6] hover:bg-[#00c4ae] text-white rounded-lg px-8"
+                className="bg-cyan-400 hover:bg-cyan-500 text-white rounded-lg px-8"
               >
                 {loading ? 'Publishing...' : 'Publish'}
               </Button>
@@ -277,6 +287,7 @@ export default function CreatePost() {
         isOpen={isCropModalOpen}
         onClose={() => setIsCropModalOpen(false)}
         onConfirm={handleCropConfirm}
+        onReupload={handleReupload}
         imageUrl={coverImagePreview}
       />
     </div>
