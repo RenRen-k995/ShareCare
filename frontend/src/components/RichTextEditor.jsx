@@ -3,7 +3,6 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Underline from '@tiptap/extension-underline';
-import Strike from '@tiptap/extension-strike';
 import {
   Undo,
   Redo,
@@ -29,7 +28,6 @@ export default function RichTextEditor({ content, onChange }) {
         allowBase64: true,
       }),
       Underline,
-      Strike,
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
