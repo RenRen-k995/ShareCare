@@ -33,5 +33,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "SF Pro", "Noto Sans", "Segoe UI", "Helvetica Neue",
+      "Source Han Sans", "Arial", "system-ui", "sans-serif";
   }
 }

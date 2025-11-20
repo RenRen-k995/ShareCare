@@ -1,4 +1,4 @@
-import PostService from '../services/PostService.js';
+import PostService from "../services/PostService.js";
 
 class PostController {
   async createPost(req, res, next) {
@@ -6,7 +6,9 @@ class PostController {
       const { title, description, category } = req.body;
 
       if (!title || !description || !category) {
-        return res.status(400).json({ message: 'Title, description, and category are required' });
+        return res
+          .status(400)
+          .json({ message: "Title, description, and category are required" });
       }
 
       const postData = { title, description, category };
@@ -19,8 +21,8 @@ class PostController {
       const post = await PostService.createPost(postData, req.user.id);
 
       res.status(201).json({
-        message: 'Post created successfully',
-        post
+        message: "Post created successfully",
+        post,
       });
     } catch (error) {
       next(error);
@@ -29,7 +31,11 @@ class PostController {
 
   async getPost(req, res, next) {
     try {
-      const post = await PostService.getPostById(req.params.id);
+      // Pass req.user.id if it exists (authentication middleware might run before this, or it might be public)
+      // If your route is public, you need to extract user from token manually if middleware didn't
+      const userId = req.user ? req.user.id : null;
+
+      const post = await PostService.getPostById(req.params.id, userId);
       res.json({ post });
     } catch (error) {
       next(error);
@@ -50,11 +56,15 @@ class PostController {
         updateData.image = `/uploads/${req.file.filename}`;
       }
 
-      const post = await PostService.updatePost(req.params.id, updateData, req.user.id);
+      const post = await PostService.updatePost(
+        req.params.id,
+        updateData,
+        req.user.id
+      );
 
       res.json({
-        message: 'Post updated successfully',
-        post
+        message: "Post updated successfully",
+        post,
       });
     } catch (error) {
       next(error);
@@ -63,7 +73,11 @@ class PostController {
 
   async deletePost(req, res, next) {
     try {
-      const result = await PostService.deletePost(req.params.id, req.user.id, req.user.isAdmin);
+      const result = await PostService.deletePost(
+        req.params.id,
+        req.user.id,
+        req.user.isAdmin
+      );
       res.json(result);
     } catch (error) {
       next(error);
@@ -72,7 +86,15 @@ class PostController {
 
   async getPosts(req, res, next) {
     try {
-      const { category, status, search, author, page = 1, limit = 10, sort = '-createdAt' } = req.query;
+      const {
+        category,
+        status,
+        search,
+        author,
+        page = 1,
+        limit = 10,
+        sort = "-createdAt",
+      } = req.query;
 
       const filters = {};
       if (category) filters.category = category;
@@ -83,7 +105,7 @@ class PostController {
       const options = {
         page: parseInt(page),
         limit: parseInt(limit),
-        sort
+        sort,
       };
 
       const result = await PostService.getPosts(filters, options);
@@ -98,14 +120,18 @@ class PostController {
       const { status } = req.body;
 
       if (!status) {
-        return res.status(400).json({ message: 'Status is required' });
+        return res.status(400).json({ message: "Status is required" });
       }
 
-      const post = await PostService.updatePostStatus(req.params.id, status, req.user.id);
+      const post = await PostService.updatePostStatus(
+        req.params.id,
+        status,
+        req.user.id
+      );
 
       res.json({
-        message: 'Post status updated successfully',
-        post
+        message: "Post status updated successfully",
+        post,
       });
     } catch (error) {
       next(error);
@@ -114,12 +140,16 @@ class PostController {
 
   async toggleReaction(req, res, next) {
     try {
-      const { type = 'like' } = req.body;
-      const post = await PostService.toggleReaction(req.params.id, req.user.id, type);
+      const { type = "like" } = req.body;
+      const post = await PostService.toggleReaction(
+        req.params.id,
+        req.user.id,
+        type
+      );
 
       res.json({
-        message: 'Reaction toggled successfully',
-        post
+        message: "Reaction toggled successfully",
+        post,
       });
     } catch (error) {
       next(error);
@@ -131,7 +161,10 @@ class PostController {
       const { page = 1, limit = 10 } = req.query;
       const options = { page: parseInt(page), limit: parseInt(limit) };
 
-      const result = await PostService.getUserPosts(req.params.userId || req.user.id, options);
+      const result = await PostService.getUserPosts(
+        req.params.userId || req.user.id,
+        options
+      );
       res.json(result);
     } catch (error) {
       next(error);

@@ -13,7 +13,7 @@ export default function CreatePostWidget() {
   };
 
   return (
-    <div className="p-6 mb-6 bg-white shadow-sm rounded-2xl">
+    <div className="p-6 mb-4 bg-white shadow-sm rounded-2xl">
       <div className="flex items-start space-x-4">
         {/* User Avatar */}
         <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 font-semibold text-white rounded-full bg-gradient-to-br from-blue-400 to-indigo-500">
