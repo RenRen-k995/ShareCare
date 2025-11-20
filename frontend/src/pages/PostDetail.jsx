@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
 import commentService from "../services/commentService";
 import chatService from "../services/chatService";
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import {
@@ -20,7 +20,7 @@ import {
   CardTitle,
   CardContent,
 } from "../components/ui/card";
-import Navbar from "../components/Navbar";
+import MainLayout from "../components/layout/MainLayout";
 import {
   Heart,
   MessageCircle,
@@ -131,25 +131,23 @@ export default function PostDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
+      <MainLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-600">Loading...</div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   if (error || !post) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-4xl px-4 py-8 mx-auto">
-          <div className="p-4 text-red-600 rounded-lg bg-red-50">
+      <MainLayout>
+        <div className="max-w-4xl px-8 py-8 mx-auto">
+          <div className="p-4 text-red-600 rounded-xl bg-red-50">
             {error || "Post not found"}
           </div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
@@ -157,11 +155,9 @@ export default function PostDetail() {
   const isAuthor = user && post.author?._id === user.id;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-4xl px-4 py-8 mx-auto">
-        <Card>
+    <MainLayout>
+      <div className="max-w-4xl px-8 py-8 mx-auto">
+        <Card className="rounded-2xl">
           {post.image && (
             <div className="w-full overflow-hidden max-h-96">
               <img
@@ -224,8 +220,12 @@ export default function PostDetail() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <div className="prose prose-sm sm:prose lg:prose-lg max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.description) }} />
+            <div className="prose-sm prose sm:prose lg:prose-lg max-w-none">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(post.description),
+                }}
+              />
             </div>
 
             <div className="flex gap-4 pt-4 border-t">
@@ -299,6 +299,6 @@ export default function PostDetail() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 }

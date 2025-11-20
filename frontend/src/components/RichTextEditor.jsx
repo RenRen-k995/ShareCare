@@ -1,8 +1,9 @@
-import React, { useCallback } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
-import Underline from '@tiptap/extension-underline';
+import React, { useCallback } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import Underline from "@tiptap/extension-underline";
+import { compressImage } from "../utils/imageCompression";
 import {
   Undo,
   Redo,
@@ -15,7 +16,7 @@ import {
   ListOrdered,
   Quote,
   Minus,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function RichTextEditor({ content, onChange }) {
   const editor = useEditor({
@@ -29,33 +30,44 @@ export default function RichTextEditor({ content, onChange }) {
       }),
       Underline,
     ],
-    content: content || '',
+    content: content || "",
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       onChange(html);
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[400px] max-w-none',
+        class:
+          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[400px] max-w-none",
       },
     },
   });
 
   const handleImageAdd = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e) => {
       const file = e.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result;
+        try {
+          // Compress image to max 800px width for editor content
+          const compressedBase64 = await compressImage(file, 800, 0.85);
           if (editor) {
-            editor.chain().focus().setImage({ src: base64String }).run();
+            editor.chain().focus().setImage({ src: compressedBase64 }).run();
           }
-        };
-        reader.readAsDataURL(file);
+        } catch (error) {
+          console.error("Error compressing image:", error);
+          // Fallback to original behavior if compression fails
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64String = reader.result;
+            if (editor) {
+              editor.chain().focus().setImage({ src: base64String }).run();
+            }
+          };
+          reader.readAsDataURL(file);
+        }
       }
     };
     input.click();
@@ -66,17 +78,66 @@ export default function RichTextEditor({ content, onChange }) {
   }
 
   const toolbarButtons = [
-    { icon: Undo, label: 'Undo', action: () => editor.chain().focus().undo().run(), disabled: !editor.can().undo() },
-    { icon: Redo, label: 'Redo', action: () => editor.chain().focus().redo().run(), disabled: !editor.can().redo() },
-    { icon: ImageIcon, label: 'Image', action: handleImageAdd },
-    { icon: Bold, label: 'Bold', action: () => editor.chain().focus().toggleBold().run(), active: editor.isActive('bold') },
-    { icon: Italic, label: 'Italic', action: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive('italic') },
-    { icon: UnderlineIcon, label: 'Underline', action: () => editor.chain().focus().toggleUnderline().run(), active: editor.isActive('underline') },
-    { icon: Strikethrough, label: 'Strike', action: () => editor.chain().focus().toggleStrike().run(), active: editor.isActive('strike') },
-    { icon: List, label: 'Bullet List', action: () => editor.chain().focus().toggleBulletList().run(), active: editor.isActive('bulletList') },
-    { icon: ListOrdered, label: 'Ordered List', action: () => editor.chain().focus().toggleOrderedList().run(), active: editor.isActive('orderedList') },
-    { icon: Quote, label: 'Blockquote', action: () => editor.chain().focus().toggleBlockquote().run(), active: editor.isActive('blockquote') },
-    { icon: Minus, label: 'Horizontal Rule', action: () => editor.chain().focus().setHorizontalRule().run() },
+    {
+      icon: Undo,
+      label: "Undo",
+      action: () => editor.chain().focus().undo().run(),
+      disabled: !editor.can().undo(),
+    },
+    {
+      icon: Redo,
+      label: "Redo",
+      action: () => editor.chain().focus().redo().run(),
+      disabled: !editor.can().redo(),
+    },
+    { icon: ImageIcon, label: "Image", action: handleImageAdd },
+    {
+      icon: Bold,
+      label: "Bold",
+      action: () => editor.chain().focus().toggleBold().run(),
+      active: editor.isActive("bold"),
+    },
+    {
+      icon: Italic,
+      label: "Italic",
+      action: () => editor.chain().focus().toggleItalic().run(),
+      active: editor.isActive("italic"),
+    },
+    {
+      icon: UnderlineIcon,
+      label: "Underline",
+      action: () => editor.chain().focus().toggleUnderline().run(),
+      active: editor.isActive("underline"),
+    },
+    {
+      icon: Strikethrough,
+      label: "Strike",
+      action: () => editor.chain().focus().toggleStrike().run(),
+      active: editor.isActive("strike"),
+    },
+    {
+      icon: List,
+      label: "Bullet List",
+      action: () => editor.chain().focus().toggleBulletList().run(),
+      active: editor.isActive("bulletList"),
+    },
+    {
+      icon: ListOrdered,
+      label: "Ordered List",
+      action: () => editor.chain().focus().toggleOrderedList().run(),
+      active: editor.isActive("orderedList"),
+    },
+    {
+      icon: Quote,
+      label: "Blockquote",
+      action: () => editor.chain().focus().toggleBlockquote().run(),
+      active: editor.isActive("blockquote"),
+    },
+    {
+      icon: Minus,
+      label: "Horizontal Rule",
+      action: () => editor.chain().focus().setHorizontalRule().run(),
+    },
   ];
 
   return (
@@ -93,8 +154,8 @@ export default function RichTextEditor({ content, onChange }) {
               onClick={button.action}
               disabled={button.disabled}
               className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${
-                button.active ? 'bg-blue-100 text-blue-600' : 'text-gray-600'
-              } ${button.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                button.active ? "bg-blue-100 text-blue-600" : "text-gray-600"
+              } ${button.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <Icon className="w-5 h-5" />
             </button>
@@ -123,7 +184,9 @@ export default function RichTextEditor({ content, onChange }) {
         }
 
         .ProseMirror img {
-          max-width: 100%;
+          max-width: 600px;
+          width: auto;
+          max-height: 400px;
           height: auto;
           display: block;
           margin: 1rem auto;

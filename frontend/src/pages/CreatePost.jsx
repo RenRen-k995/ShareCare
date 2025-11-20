@@ -1,30 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import postService from '../services/postService';
-import { Button } from '../components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import Navbar from '../components/Navbar';
-import CropModal from '../components/CropModal';
-import RichTextEditor from '../components/RichTextEditor';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import postService from "../services/postService";
+import { Button } from "../components/ui/button";
 import {
-  Image,
-  Calendar,
-} from 'lucide-react';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import MainLayout from "../components/layout/MainLayout";
+import CropModal from "../components/CropModal";
+import RichTextEditor from "../components/RichTextEditor";
+import { Image, Calendar } from "lucide-react";
 
 export default function CreatePost() {
   const [formData, setFormData] = useState({
-    title: '',
-    content: '', // HTML string for rich text
-    coverImageUrl: '',
-    channel: 'general',
+    title: "",
+    content: "", // HTML string for rich text
+    coverImageUrl: "",
+    channel: "general",
     isOriginal: true,
-    scheduledDate: '',
+    scheduledDate: "",
   });
   const [coverImage, setCoverImage] = useState(null);
-  const [coverImagePreview, setCoverImagePreview] = useState('');
+  const [coverImagePreview, setCoverImagePreview] = useState("");
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -38,9 +41,9 @@ export default function CreatePost() {
   };
 
   const handleAddCover = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
@@ -71,7 +74,7 @@ export default function CreatePost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
@@ -84,29 +87,27 @@ export default function CreatePost() {
         image: coverImage,
       };
       await postService.createPost(postData);
-      navigate('/');
+      navigate("/");
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create post');
+      setError(err.response?.data?.message || "Failed to create post");
     } finally {
       setLoading(false);
     }
   };
 
   if (!user) {
-    navigate('/login');
+    navigate("/login");
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      
+    <MainLayout>
       {/* Main Container Wrapper - Centered Card Layout */}
-      <div className="flex justify-center py-8 px-4">
-        <div className="w-full max-w-4xl border border-gray-200 rounded-xl shadow-sm bg-white">
+      <div className="flex justify-center px-8 py-8">
+        <div className="w-full max-w-4xl bg-white border border-gray-100 shadow-sm rounded-2xl">
           <form onSubmit={handleSubmit} className="p-8 space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+              <div className="p-3 text-sm text-red-600 rounded-lg bg-red-50">
                 {error}
               </div>
             )}
@@ -117,7 +118,7 @@ export default function CreatePost() {
               placeholder="Title"
               value={formData.title}
               onChange={handleTitleChange}
-              className="w-full text-4xl font-bold bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent outline-none"
+              className="w-full px-4 text-2xl font-bold text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg outline-none bg-gray-50 focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
               required
             />
 
@@ -129,21 +130,26 @@ export default function CreatePost() {
             />
 
             {/* Settings Area */}
-            <div className="space-y-6 pt-8 border-t border-gray-200">
+            <div className="pt-8 space-y-6 border-t border-gray-200">
               {/* Cover Image */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Cover Image</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Cover Image
+                </label>
                 {formData.coverImageUrl ? (
-                  <div className="relative rounded-lg overflow-hidden" style={{ aspectRatio: '2.5/1' }}>
+                  <div
+                    className="relative overflow-hidden rounded-lg"
+                    style={{ aspectRatio: "2.5/1" }}
+                  >
                     <img
                       src={formData.coverImageUrl}
                       alt="Cover"
-                      className="w-full h-full object-cover"
+                      className="object-cover w-full h-full"
                     />
                     <button
                       type="button"
                       onClick={handleAddCover}
-                      className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors text-sm"
+                      className="absolute px-4 py-2 text-sm transition-colors rounded-lg shadow-md bottom-4 right-4 bg-white/90 hover:bg-white"
                     >
                       Change Cover
                     </button>
@@ -152,13 +158,15 @@ export default function CreatePost() {
                   <button
                     type="button"
                     onClick={handleAddCover}
-                    className="w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-cyan-400 hover:bg-gray-50 transition-colors"
-                    style={{ aspectRatio: '2.5/1', minHeight: '200px' }}
+                    className="flex items-center justify-center w-full transition-colors border-2 border-gray-300 border-dashed rounded-lg hover:border-cyan-400 hover:bg-gray-50"
+                    style={{ aspectRatio: "2.5/1", minHeight: "200px" }}
                   >
                     <div className="text-center">
-                      <Image className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+                      <Image className="w-12 h-12 mx-auto mb-2 text-gray-400" />
                       <p className="text-sm text-gray-600">Add Cover</p>
-                      <p className="text-xs text-gray-400 mt-1">Recommended: 2.5:1 aspect ratio</p>
+                      <p className="mt-1 text-xs text-gray-400">
+                        Recommended: 2.5:1 aspect ratio
+                      </p>
                     </div>
                   </button>
                 )}
@@ -166,10 +174,14 @@ export default function CreatePost() {
 
               {/* Channel Selection */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Channel</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Category
+                </label>
                 <Select
                   value={formData.channel}
-                  onValueChange={(value) => setFormData({ ...formData, channel: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, channel: value })
+                  }
                 >
                   <SelectTrigger className="rounded-lg">
                     <SelectValue />
@@ -178,37 +190,11 @@ export default function CreatePost() {
                     <SelectItem value="general">General</SelectItem>
                     <SelectItem value="items">Items</SelectItem>
                     <SelectItem value="knowledge">Knowledge</SelectItem>
-                    <SelectItem value="emotional-support">Emotional Support</SelectItem>
+                    <SelectItem value="emotional-support">
+                      Emotional Support
+                    </SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              {/* Original Content Checkbox */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isOriginal"
-                  checked={formData.isOriginal}
-                  onChange={(e) => setFormData({ ...formData, isOriginal: e.target.checked })}
-                  className="w-4 h-4 text-cyan-400 border-gray-300 rounded focus:ring-cyan-400"
-                />
-                <label htmlFor="isOriginal" className="text-sm text-gray-700">
-                  This is original content
-                </label>
-              </div>
-
-              {/* Scheduled Date */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  Schedule Post (Optional)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formData.scheduledDate}
-                  onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
-                />
               </div>
             </div>
 
@@ -217,7 +203,7 @@ export default function CreatePost() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/')}
+                onClick={() => navigate("/")}
                 className="rounded-lg"
               >
                 Cancel
@@ -225,9 +211,9 @@ export default function CreatePost() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-cyan-400 hover:bg-cyan-500 text-white rounded-lg px-8"
+                className="px-8 text-white rounded-lg bg-cyan-400 hover:bg-cyan-500"
               >
-                {loading ? 'Publishing...' : 'Publish'}
+                {loading ? "Publishing..." : "Publish"}
               </Button>
             </div>
           </form>
@@ -242,6 +228,6 @@ export default function CreatePost() {
         onReupload={handleReupload}
         imageUrl={coverImagePreview}
       />
-    </div>
+    </MainLayout>
   );
 }
