@@ -17,7 +17,7 @@ export default function MainLayout({ children }) {
         {/* Main Scrollable Area 
            - This acts as the viewport/window for the sticky element
         */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 rounded-tl-[40px] shadow-inner p-6">
+        <main className="flex-1 overflow-y-auto bg-[#F5F7F7] rounded-tl-[25px] shadow-inner p-6">
           {/* Layout Container */}
           <div className="flex justify-center max-w-[1280px] mx-auto gap-8 items-start">
             {/* Middle Content (Feed) - Grows to fill space */}

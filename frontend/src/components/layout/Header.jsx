@@ -14,7 +14,7 @@ export default function Header() {
   };
 
   return (
-    <header className="flex items-center justify-between px-8 py-4 bg-white 0">
+    <header className="flex items-center justify-between h-20 px-8 py-4 bg-white 0">
       {/* Left side - Can add breadcrumbs or page title here */}
       <div className="flex-1">
         {/* Empty for now, or add dynamic content */}

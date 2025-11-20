@@ -10,19 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import MainLayout from "../components/layout/MainLayout";
 import CropModal from "../components/CropModal";
 import RichTextEditor from "../components/RichTextEditor";
-import { Image, Calendar } from "lucide-react";
+import { ChevronLeft, Image as ImageIcon } from "lucide-react";
 
 export default function CreatePost() {
   const [formData, setFormData] = useState({
     title: "",
-    content: "", // HTML string for rich text
+    content: "",
     coverImageUrl: "",
     channel: "general",
-    isOriginal: true,
-    scheduledDate: "",
   });
   const [coverImage, setCoverImage] = useState(null);
   const [coverImagePreview, setCoverImagePreview] = useState("");
@@ -64,25 +61,15 @@ export default function CreatePost() {
     setIsCropModalOpen(false);
   };
 
-  const handleReupload = () => {
-    setIsCropModalOpen(false);
-    // Trigger file input again
-    setTimeout(() => {
-      handleAddCover();
-    }, 100);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      // For now, we'll use the existing API structure
-      // In production, you'd update the backend to accept the new fields
       const postData = {
         title: formData.title,
-        description: formData.content, // Map content to description for existing API
+        description: formData.content,
         category: formData.channel,
         image: coverImage,
       };
@@ -101,133 +88,168 @@ export default function CreatePost() {
   }
 
   return (
-    <MainLayout>
-      {/* Main Container Wrapper - Centered Card Layout */}
-      <div className="flex justify-center px-8 py-8">
-        <div className="w-full max-w-4xl bg-white border border-gray-100 shadow-sm rounded-2xl">
-          <form onSubmit={handleSubmit} className="p-8 space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-red-600 rounded-lg bg-red-50">
-                {error}
-              </div>
-            )}
+    <div className="flex flex-col min-h-screen bg-[#F5F7F7]">
+      {/* --- Sticky Header --- */}
+      <header className="sticky top-0 z-50 h-16 bg-white">
+        <div className="flex items-center justify-between h-full max-w-6xl px-6 mx-auto">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-gray-900">Creation Center</h1>
+          </div>
 
-            {/* Title Input with Border */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 overflow-hidden border border-gray-200 rounded-full">
+                <img
+                  src={user?.avatar || "https://github.com/shadcn.png"}
+                  alt="User"
+                  className="object-cover w-full h-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* --- Main Content --- */}
+      <main className="flex-1 w-full max-w-4xl p-6 pb-32 mx-auto">
+        {error && (
+          <div className="p-3 mb-4 text-sm text-red-600 border border-red-100 rounded-lg bg-red-50">
+            {error}
+          </div>
+        )}
+
+        {/* Main White Card Container */}
+        {/* IMPORTANT: No overflow-hidden here, or sticky breaks */}
+        <div className="bg-white rounded-2xl p-8 min-h-[80vh]">
+          {/* Header Row: Title + Drafts */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900">New Article</h2>
+          </div>
+
+          {/* 1. Title Input - Standalone */}
+          <div className="relative mb-6">
             <input
               type="text"
-              placeholder="Title"
+              placeholder="Enter a title"
               value={formData.title}
               onChange={handleTitleChange}
-              className="w-full px-4 text-2xl font-bold text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg outline-none bg-gray-50 focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
-              required
+              className="w-full px-4 py-3 text-2xl font-medium text-gray-900 placeholder-gray-300 transition-colors border border-gray-200 outline-none rounded-xl focus:border-gray-400"
+              maxLength={120}
             />
+            <span className="absolute text-xs text-gray-300 pointer-events-none right-4 top-4">
+              {formData.title.length}/120
+            </span>
+          </div>
 
-            {/* Rich Text Editor */}
+          {/* 2. The Editor "Box" Component */}
+          <div className="mb-10">
             <RichTextEditor
               content={formData.content}
               onChange={handleContentChange}
-              placeholder="Start writing your content..."
+              placeholder="Share your thoughts, keep it friendly"
             />
+          </div>
 
-            {/* Settings Area */}
-            <div className="pt-8 space-y-6 border-t border-gray-200">
-              {/* Cover Image */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Cover Image
-                </label>
-                {formData.coverImageUrl ? (
-                  <div
-                    className="relative overflow-hidden rounded-lg"
-                    style={{ aspectRatio: "2.5/1" }}
-                  >
-                    <img
-                      src={formData.coverImageUrl}
-                      alt="Cover"
-                      className="object-cover w-full h-full"
-                    />
-                    <button
-                      type="button"
+          {/* 3. Settings Section */}
+          <div className="max-w-2xl space-y-8">
+            {/* Channel */}
+            <div>
+              <label className="block mb-2 text-base font-bold text-gray-900">
+                Select Channel <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={formData.channel}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, channel: value })
+                }
+              >
+                <SelectTrigger className="w-full transition-colors border-transparent rounded-lg bg-gray-50 hover:bg-gray-100 h-11">
+                  <SelectValue placeholder="Select a channel" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="items">Items (Donation)</SelectItem>
+                  <SelectItem value="knowledge">Knowledge</SelectItem>
+                  <SelectItem value="emotional-support">
+                    Emotional Support
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Cover Image */}
+            <div>
+              <label className="flex flex-col block mb-2 text-base font-bold text-gray-900">
+                <div>
+                  Add Cover <span className="text-red-500">*</span>
+                </div>
+                <span className="ml-2 text-xs font-normal text-gray-400">
+                  Add a cover image that fits your content to attract more
+                  views.
+                </span>
+              </label>
+
+              {formData.coverImageUrl ? (
+                <div className="relative w-[300px] overflow-hidden rounded-lg group aspect-video bg-gray-50 border border-gray-100">
+                  <img
+                    src={formData.coverImageUrl}
+                    alt="Cover"
+                    className="object-cover w-full h-full"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/40 group-hover:opacity-100">
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={handleAddCover}
-                      className="absolute px-4 py-2 text-sm transition-colors rounded-lg shadow-md bottom-4 right-4 bg-white/90 hover:bg-white"
                     >
-                      Change Cover
-                    </button>
+                      Change
+                    </Button>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleAddCover}
-                    className="flex items-center justify-center w-full transition-colors border-2 border-gray-300 border-dashed rounded-lg hover:border-cyan-400 hover:bg-gray-50"
-                    style={{ aspectRatio: "2.5/1", minHeight: "200px" }}
-                  >
-                    <div className="text-center">
-                      <Image className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm text-gray-600">Add Cover</p>
-                      <p className="mt-1 text-xs text-gray-400">
-                        Recommended: 2.5:1 aspect ratio
-                      </p>
-                    </div>
-                  </button>
-                )}
-              </div>
-
-              {/* Channel Selection */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Category
-                </label>
-                <Select
-                  value={formData.channel}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, channel: value })
-                  }
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddCover}
+                  className="flex flex-col items-center justify-center w-[300px] aspect-video transition-all bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-400"
                 >
-                  <SelectTrigger className="rounded-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="items">Items</SelectItem>
-                    <SelectItem value="knowledge">Knowledge</SelectItem>
-                    <SelectItem value="emotional-support">
-                      Emotional Support
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="flex items-center justify-center w-8 h-8 mb-2">
+                    <span className="text-3xl font-light text-gray-300">+</span>
+                  </div>
+                  <span className="text-sm text-gray-400">Add image</span>
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* Action Bar - Inside Container at Bottom */}
-            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/")}
-                className="rounded-lg"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="px-8 text-white rounded-lg bg-cyan-400 hover:bg-cyan-500"
-              >
-                {loading ? "Publishing..." : "Publish"}
-              </Button>
-            </div>
-          </form>
+          {/* Footer Buttons */}
+          <div className="flex items-center justify-end gap-4 pt-6 mt-12 border-t border-gray-100">
+            <Button
+              variant="secondary"
+              className="px-8 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200"
+            >
+              Preview
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={loading || !formData.title}
+              className="px-8 text-white rounded-full shadow-md bg-cyan-400 hover:bg-cyan-500"
+            >
+              {loading ? "Publishing..." : "Publish"}
+            </Button>
+          </div>
         </div>
-      </div>
+      </main>
 
-      {/* Crop Modal */}
       <CropModal
         isOpen={isCropModalOpen}
         onClose={() => setIsCropModalOpen(false)}
         onConfirm={handleCropConfirm}
-        onReupload={handleReupload}
+        onReupload={() => {
+          setIsCropModalOpen(false);
+          setTimeout(handleAddCover, 100);
+        }}
         imageUrl={coverImagePreview}
       />
-    </MainLayout>
+    </div>
   );
 }

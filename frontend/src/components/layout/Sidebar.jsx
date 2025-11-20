@@ -49,7 +49,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex flex-col w-64 bg-white">
+    <aside className="flex flex-col bg-white w-60">
       {/* Logo */}
       <div className="px-6 py-8">
         <Link to="/" className="flex items-center space-x-3">
