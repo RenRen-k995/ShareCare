@@ -44,7 +44,7 @@ export default function CreatePost() {
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        setCoverImage(file);
+        // Don't set coverImage yet, wait for crop
         const reader = new FileReader();
         reader.onloadend = () => {
           setCoverImagePreview(reader.result);
@@ -56,9 +56,23 @@ export default function CreatePost() {
     input.click();
   };
 
-  const handleCropConfirm = (croppedImageUrl) => {
-    setFormData({ ...formData, coverImageUrl: croppedImageUrl });
-    setIsCropModalOpen(false);
+  const handleCropConfirm = async (croppedImageUrl) => {
+    try {
+      // 1. Update the preview URL
+      setFormData({ ...formData, coverImageUrl: croppedImageUrl });
+
+      // 2. CRITICAL FIX: Convert the cropped blob URL back to a File object
+      // This ensures the 'coverImage' state holds the CROPPED image, not the original
+      const response = await fetch(croppedImageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], "cover_image.jpg", { type: "image/jpeg" });
+
+      setCoverImage(file);
+      setIsCropModalOpen(false);
+    } catch (err) {
+      console.error("Error processing cropped image:", err);
+      setError("Failed to process cropped image");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -80,7 +94,7 @@ export default function CreatePost() {
         title: formData.title,
         description: formData.content,
         category: formData.channel,
-        image: coverImage,
+        image: coverImage, // This now contains the cropped file
       };
       await postService.createPost(postData);
       navigate("/");
