@@ -170,6 +170,24 @@ class PostController {
       next(error);
     }
   }
+
+  async uploadImage(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file provided" });
+      }
+
+      const imageUrl = `/uploads/${req.file.filename}`;
+      const baseUrl = process.env.API_URL || "http://localhost:5000";
+
+      res.status(200).json({
+        message: "Image uploaded successfully",
+        imageUrl: `${baseUrl}${imageUrl}`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new PostController();

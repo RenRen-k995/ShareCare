@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const postSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 200 },
-    description: { type: String, required: true, maxlength: 50000 },
+    description: { type: String, required: true, maxlength: 10000 },
     category: {
       type: String,
       required: true,
@@ -16,6 +16,7 @@ const postSchema = new mongoose.Schema(
       default: "available",
     },
     image: { type: String, default: "" },
+    contentImages: [{ type: String }], // Array of inline image URLs
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

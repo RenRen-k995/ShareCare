@@ -22,7 +22,7 @@ export default function MainLayout({ children, rightSidebar }) {
             <div className="flex-1 max-w-3xl min-w-0">{children}</div>
 
             {/* Right Sidebar - Sticky & Fixed width */}
-            <div className="sticky top-0 hidden pt-6 xl:block w-80 shrink-0">
+            <div className="sticky top-0 hidden xl:block w-80 shrink-0">
               {/* Render custom right sidebar if provided, else default */}
               {rightSidebar || <RightSidebar />}
             </div>

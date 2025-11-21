@@ -67,6 +67,15 @@ export default function CreatePost() {
     setLoading(true);
 
     try {
+      // Validate content length
+      if (formData.content.length > 10000) {
+        setError(
+          `Content is too long (${formData.content.length.toLocaleString()} characters). Maximum allowed is 10,000 characters. Please remove some text.`
+        );
+        setLoading(false);
+        return;
+      }
+
       const postData = {
         title: formData.title,
         description: formData.content,
@@ -147,6 +156,7 @@ export default function CreatePost() {
               content={formData.content}
               onChange={handleContentChange}
               placeholder="Share your thoughts, keep it friendly"
+              maxLength={10000}
             />
           </div>
 

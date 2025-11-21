@@ -5,6 +5,7 @@ import Image from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import { compressImage } from "../utils/imageCompression";
+import { uploadImage } from "../lib/api";
 import {
   Undo,
   Redo,
@@ -20,7 +21,15 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 
-export default function RichTextEditor({ content, onChange, placeholder }) {
+export default function RichTextEditor({
+  content,
+  onChange,
+  placeholder,
+  maxLength = 10000,
+}) {
+  const [contentLength, setContentLength] = React.useState(0);
+  const [showWarning, setShowWarning] = React.useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -41,6 +50,9 @@ export default function RichTextEditor({ content, onChange, placeholder }) {
     content: content || "",
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
+      const length = html.length;
+      setContentLength(length);
+      setShowWarning(length > maxLength * 0.9);
       onChange(html);
     },
     editorProps: {
@@ -60,9 +72,32 @@ export default function RichTextEditor({ content, onChange, placeholder }) {
       const file = e.target.files[0];
       if (file) {
         try {
-          const compressedBase64 = await compressImage(file, 800, 0.85);
+          // Show loading state
+          const loadingNode = editor
+            .chain()
+            .focus()
+            .insertContent("<p>Uploading image...</p>")
+            .run();
+
+          // Compress image to reduce upload size
+          const compressedBase64 = await compressImage(file, 800, 0.8);
+
+          // Convert base64 to blob for upload
+          const response = await fetch(compressedBase64);
+          const blob = await response.blob();
+          const compressedFile = new File([blob], file.name, {
+            type: "image/jpeg",
+          });
+
+          // Upload to server
+          const imageUrl = await uploadImage(compressedFile);
+
+          // Remove loading text and insert image with server URL
           if (editor) {
-            editor.chain().focus().setImage({ src: compressedBase64 }).run();
+            // Remove the loading paragraph
+            editor.commands.deleteNode("paragraph");
+
+            editor.chain().focus().setImage({ src: imageUrl }).run();
             editor
               .chain()
               .focus()
@@ -71,7 +106,12 @@ export default function RichTextEditor({ content, onChange, placeholder }) {
               .run();
           }
         } catch (error) {
-          console.error("Error adding image:", error);
+          console.error("Error uploading image:", error);
+          // Remove loading text if it exists
+          editor?.commands.deleteNode("paragraph");
+          alert(
+            "Failed to upload image. Please try again or use a smaller image."
+          );
         }
       }
     };
@@ -192,6 +232,29 @@ export default function RichTextEditor({ content, onChange, placeholder }) {
 
       <div className="flex-1 bg-white">
         <EditorContent editor={editor} />
+      </div>
+
+      {/* Character Counter */}
+      <div className="sticky bottom-0 z-40 bg-white border-t border-gray-100 px-6 py-2 flex justify-between items-center">
+        <div
+          className={`text-sm ${
+            contentLength > maxLength
+              ? "text-red-600 font-semibold"
+              : showWarning
+              ? "text-orange-500 font-medium"
+              : "text-gray-400"
+          }`}
+        >
+          {contentLength.toLocaleString()} / {maxLength.toLocaleString()}{" "}
+          characters
+          {contentLength > maxLength && " (Content too long!)"}
+          {showWarning && contentLength <= maxLength && " (Approaching limit)"}
+        </div>
+        {contentLength > maxLength && (
+          <div className="text-xs text-red-500">
+            Please remove some content or images
+          </div>
+        )}
       </div>
 
       <style>{`

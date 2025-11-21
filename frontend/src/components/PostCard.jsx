@@ -193,9 +193,14 @@ export default function PostCard({ post, onUpdate }) {
         </div>
       )}
 
+      {/* --- TITLE --- */}
+      <div className="px-1 mb-2 font-semibold text-gray-900 text-[17px]">
+        <p>{extractTextFromHtml(post.title, 100)}</p>
+      </div>
+
       {/* --- TEXT CONTENT --- */}
       <div className="px-1 mb-4">
-        <p className="text-gray-800 text-[15px] leading-relaxed whitespace-pre-wrap">
+        <p className="text-gray-400 text-[15px] leading-relaxed whitespace-pre-wrap">
           {extractTextFromHtml(post.description, 300)}
         </p>
       </div>

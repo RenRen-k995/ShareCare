@@ -5,7 +5,7 @@ import postService from "../services/postService";
 import commentService from "../services/commentService";
 import CreatorProfile from "../components/CreatorProfile";
 import MainLayout from "../components/layout/MainLayout";
-import { extractTextFromHtml } from "../utils/htmlUtils";
+import { processContentImages } from "../utils/contentSanitizer";
 import {
   ThumbsUp,
   MessageSquare,
@@ -118,6 +118,36 @@ export default function PostDetail() {
 
   return (
     <MainLayout rightSidebar={<CreatorProfile author={post.author} />}>
+      <style>{`
+        .article-content .article-image {
+          display: block;
+          width: 100%;
+          max-width: 500px;
+          height: auto;
+          border-radius: 12px;
+          margin: 2rem auto;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .article-content p {
+          margin-bottom: 1em;
+        }
+        .article-content ul, .article-content ol {
+          margin: 1em 0;
+          padding-left: 2em;
+        }
+        .article-content blockquote {
+          border-left: 3px solid #e5e7eb;
+          padding-left: 1rem;
+          color: #6b7280;
+          font-style: italic;
+          margin: 1.5em 0;
+        }
+        .article-content hr {
+          border: none;
+          border-top: 2px solid #e5e7eb;
+          margin: 2em 0;
+        }
+      `}</style>
       <div className="pb-32">
         {/* --- Sticky Article Header --- */}
         {/* Added background and z-index to sit on top of content when scrolling */}
@@ -146,7 +176,7 @@ export default function PostDetail() {
 
           {/* Image */}
           {post.image && (
-            <div className="w-full aspect-[2.1] rounded-lg overflow-hidden bg-gray-100 mb-8 border border-gray-100">
+            <div className="w-full aspect-[2.1] overflow-hidden bg-gray-100 mb-8 border border-gray-100">
               <img
                 src={`${API_URL}${post.image}`}
                 alt={post.title}
@@ -156,11 +186,12 @@ export default function PostDetail() {
           )}
 
           {/* Content Body */}
-          <div className="mb-12 leading-relaxed prose prose-lg text-gray-800 max-w-none">
-            <p className="whitespace-pre-wrap">
-              {extractTextFromHtml(post.description, 5000)}
-            </p>
-          </div>
+          <div
+            className="mb-12 leading-relaxed prose prose-lg text-gray-800 max-w-none article-content"
+            dangerouslySetInnerHTML={{
+              __html: processContentImages(post.description),
+            }}
+          />
 
           {/* Reaction Buttons */}
           <div className="flex justify-center gap-4 pt-8 border-t border-gray-50">

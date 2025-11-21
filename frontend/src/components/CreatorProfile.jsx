@@ -6,7 +6,7 @@ export default function CreatorProfile({ author }) {
   if (!author) return null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col pt-6 gap-4">
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
         <h3 className="font-bold text-gray-900 mb-6 text-[15px]">
           Creator Profile
