@@ -6,9 +6,9 @@
 const createImage = (url) =>
   new Promise((resolve, reject) => {
     const image = new Image();
-    image.addEventListener('load', () => resolve(image));
-    image.addEventListener('error', (error) => reject(error));
-    image.setAttribute('crossOrigin', 'anonymous');
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", (error) => reject(error));
+    image.setAttribute("crossOrigin", "anonymous");
     image.src = url;
   });
 
@@ -41,17 +41,19 @@ function rotateSize(width, height, rotation) {
  * @param {Object} pixelCrop - Crop area in pixels {x, y, width, height}
  * @param {number} rotation - Rotation in degrees (default: 0)
  * @param {boolean} flip - Whether to flip horizontally (default: {horizontal: false, vertical: false})
+ * @param {number} maxWidth - Maximum width for the output image (default: 1600 for cover images)
  * @returns {Promise<string>} - Returns the cropped image as a blob URL
  */
 export default async function getCroppedImg(
   imageSrc,
   pixelCrop,
   rotation = 0,
-  flip = { horizontal: false, vertical: false }
+  flip = { horizontal: false, vertical: false },
+  maxWidth = 1600
 ) {
   const image = await createImage(imageSrc);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
 
   if (!ctx) {
     return null;
@@ -87,22 +89,68 @@ export default async function getCroppedImg(
     pixelCrop.height
   );
 
-  // Set canvas width to final desired crop size - this will clear existing context
+  // Calculate scaled dimensions (maintain aspect ratio)
+  let finalWidth = pixelCrop.width;
+  let finalHeight = pixelCrop.height;
+
+  if (finalWidth > maxWidth) {
+    const scale = maxWidth / finalWidth;
+    finalWidth = maxWidth;
+    finalHeight = Math.round(pixelCrop.height * scale);
+  }
+
+  // Set canvas to cropped size first
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 
-  // Paste generated image data to the canvas
+  // Paste cropped image data
   ctx.putImageData(data, 0, 0);
 
-  // Return as blob URL
+  // If we need to scale down, create a new canvas
+  if (finalWidth !== pixelCrop.width) {
+    const scaledCanvas = document.createElement("canvas");
+    const scaledCtx = scaledCanvas.getContext("2d");
+
+    scaledCanvas.width = finalWidth;
+    scaledCanvas.height = finalHeight;
+
+    // Use high-quality image smoothing
+    scaledCtx.imageSmoothingEnabled = true;
+    scaledCtx.imageSmoothingQuality = "high";
+
+    // Draw scaled image
+    scaledCtx.drawImage(canvas, 0, 0, finalWidth, finalHeight);
+
+    // Return as blob URL from scaled canvas
+    return new Promise((resolve, reject) => {
+      scaledCanvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Canvas is empty"));
+            return;
+          }
+          const fileUrl = URL.createObjectURL(blob);
+          resolve(fileUrl);
+        },
+        "image/jpeg",
+        0.9
+      ); // 0.9 quality for good balance
+    });
+  }
+
+  // Return as blob URL from original canvas if no scaling needed
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Canvas is empty'));
-        return;
-      }
-      const fileUrl = URL.createObjectURL(blob);
-      resolve(fileUrl);
-    }, 'image/jpeg');
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("Canvas is empty"));
+          return;
+        }
+        const fileUrl = URL.createObjectURL(blob);
+        resolve(fileUrl);
+      },
+      "image/jpeg",
+      0.9
+    ); // 0.9 quality for good balance
   });
 }

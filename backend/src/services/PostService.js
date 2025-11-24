@@ -1,35 +1,46 @@
-import PostRepository from '../repositories/PostRepository.js';
+import PostRepository from "../repositories/PostRepository.js";
 
 class PostService {
   async createPost(postData, authorId) {
     const post = await PostRepository.create({
       ...postData,
-      author: authorId
+      author: authorId,
     });
     return post;
   }
 
-  async getPostById(postId) {
+  async getPostById(postId, userId = null) {
     const post = await PostRepository.findById(postId);
     if (!post) {
-      throw new Error('Post not found');
+      throw new Error("Post not found");
     }
-    
-    // Increment view count
-    await PostRepository.incrementViewCount(postId);
-    
+
+    // Logic for unique views per account
+    if (userId) {
+      const hasViewed = post.viewedBy && post.viewedBy.includes(userId);
+
+      if (!hasViewed) {
+        // Atomic update to prevent race conditions
+        await PostRepository.findByIdAndUpdate(postId, {
+          $inc: { viewCount: 1 },
+          $addToSet: { viewedBy: userId },
+        });
+        // Update the local post object to reflect the change immediately
+        post.viewCount += 1;
+      }
+    }
     return post;
   }
 
   async updatePost(postId, updateData, userId) {
     const post = await PostRepository.findById(postId);
     if (!post) {
-      throw new Error('Post not found');
+      throw new Error("Post not found");
     }
 
     // Check if user is the author
     if (post.author._id.toString() !== userId) {
-      throw new Error('You are not authorized to update this post');
+      throw new Error("You are not authorized to update this post");
     }
 
     // Don't allow changing author
@@ -43,16 +54,16 @@ class PostService {
   async deletePost(postId, userId, isAdmin = false) {
     const post = await PostRepository.findById(postId);
     if (!post) {
-      throw new Error('Post not found');
+      throw new Error("Post not found");
     }
 
     // Check if user is the author or admin
     if (post.author._id.toString() !== userId && !isAdmin) {
-      throw new Error('You are not authorized to delete this post');
+      throw new Error("You are not authorized to delete this post");
     }
 
     await PostRepository.delete(postId);
-    return { message: 'Post deleted successfully' };
+    return { message: "Post deleted successfully" };
   }
 
   async getPosts(filters = {}, options = {}) {
@@ -80,27 +91,27 @@ class PostService {
   async updatePostStatus(postId, status, userId) {
     const post = await PostRepository.findById(postId);
     if (!post) {
-      throw new Error('Post not found');
+      throw new Error("Post not found");
     }
 
     // Check if user is the author
     if (post.author._id.toString() !== userId) {
-      throw new Error('You are not authorized to update this post status');
+      throw new Error("You are not authorized to update this post status");
     }
 
     const updatedPost = await PostRepository.update(postId, { status });
     return updatedPost;
   }
 
-  async toggleReaction(postId, userId, reactionType = 'like') {
+  async toggleReaction(postId, userId, reactionType = "like") {
     const post = await PostRepository.findById(postId);
     if (!post) {
-      throw new Error('Post not found');
+      throw new Error("Post not found");
     }
 
     // Check if user already reacted
     const existingReaction = post.reactions.find(
-      r => r.user.toString() === userId
+      (r) => r.user.toString() === userId
     );
 
     let updatedPost;
@@ -109,7 +120,11 @@ class PostService {
       updatedPost = await PostRepository.removeReaction(postId, userId);
     } else {
       // Add reaction
-      updatedPost = await PostRepository.addReaction(postId, userId, reactionType);
+      updatedPost = await PostRepository.addReaction(
+        postId,
+        userId,
+        reactionType
+      );
     }
 
     return updatedPost;

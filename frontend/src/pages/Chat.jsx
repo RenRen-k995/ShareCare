@@ -1,21 +1,27 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import ChatList from "../components/chat/ChatList";
 import ChatWindow from "../components/chat/ChatWindow";
 import chatService from "../services/chatService";
-import Navbar from "../components/Navbar";
+import MainLayout from "../components/layout/MainLayout";
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState(null);
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   useEffect(() => {
     const chatId = searchParams.get("chatId");
     if (chatId) {
       loadChat(chatId);
     }
-  }, [searchParams]);
+    // Check if navigated from PostCard with userId
+    if (location.state?.userId) {
+      // Could create or find existing chat with this user
+      console.log("Starting chat with user:", location.state.userId);
+    }
+  }, [searchParams, location.state]);
 
   const loadChat = async (chatId) => {
     try {
@@ -40,17 +46,13 @@ export default function Chat() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div
-          className="bg-white rounded-lg shadow-lg overflow-hidden"
-          style={{ height: "calc(100vh - 200px)" }}
-        >
+    <MainLayout>
+      <div className="h-full flex flex-col px-8 py-6">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-3 h-full">
             {/* Chat List */}
             <div
-              className={`lg:col-span-1 ${
+              className={`lg:col-span-1 border-r border-gray-100 ${
                 showChatWindow ? "hidden lg:block" : "block"
               }`}
             >
@@ -71,6 +73,6 @@ export default function Chat() {
           </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }

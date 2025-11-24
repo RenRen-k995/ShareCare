@@ -1,8 +1,11 @@
-import React, { useCallback } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
-import Underline from '@tiptap/extension-underline';
+import React, { useCallback } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import { compressImage } from "../utils/imageCompression";
+import { uploadImage } from "../lib/api";
 import {
   Undo,
   Redo,
@@ -15,173 +18,275 @@ import {
   ListOrdered,
   Quote,
   Minus,
-} from 'lucide-react';
+  Link as LinkIcon,
+} from "lucide-react";
 
-export default function RichTextEditor({ content, onChange }) {
+export default function RichTextEditor({
+  content,
+  onChange,
+  placeholder,
+  maxLength = 10000,
+}) {
+  const [contentLength, setContentLength] = React.useState(0);
+  const [showWarning, setShowWarning] = React.useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: false, // Disable headings for simplicity
+        heading: false,
       }),
       Image.configure({
         inline: true,
         allowBase64: true,
+        HTMLAttributes: {
+          class: "article-image",
+        },
       }),
       Underline,
+      Link.configure({
+        openOnClick: false,
+      }),
     ],
-    content: content || '',
+    content: content || "",
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
+      const length = html.length;
+      setContentLength(length);
+      setShowWarning(length > maxLength * 0.9);
       onChange(html);
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[400px] max-w-none',
+        // Increased min-height and padding
+        class:
+          "prose prose-lg max-w-none focus:outline-none min-h-[600px] px-8 py-6",
       },
     },
   });
 
   const handleImageAdd = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e) => {
       const file = e.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result;
+        try {
+          // Show loading state
+          const loadingNode = editor
+            .chain()
+            .focus()
+            .insertContent("<p>Uploading image...</p>")
+            .run();
+
+          // Compress image to reduce upload size
+          const compressedBase64 = await compressImage(file, 800, 0.8);
+
+          // Convert base64 to blob for upload
+          const response = await fetch(compressedBase64);
+          const blob = await response.blob();
+          const compressedFile = new File([blob], file.name, {
+            type: "image/jpeg",
+          });
+
+          // Upload to server
+          const imageUrl = await uploadImage(compressedFile);
+
+          // Remove loading text and insert image with server URL
           if (editor) {
-            editor.chain().focus().setImage({ src: base64String }).run();
+            // Remove the loading paragraph
+            editor.commands.deleteNode("paragraph");
+
+            editor.chain().focus().setImage({ src: imageUrl }).run();
+            editor
+              .chain()
+              .focus()
+              .createParagraphNear()
+              .insertContent("")
+              .run();
           }
-        };
-        reader.readAsDataURL(file);
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          // Remove loading text if it exists
+          editor?.commands.deleteNode("paragraph");
+          alert(
+            "Failed to upload image. Please try again or use a smaller image."
+          );
+        }
       }
     };
     input.click();
   }, [editor]);
 
-  if (!editor) {
-    return null;
-  }
+  if (!editor) return null;
 
-  const toolbarButtons = [
-    { icon: Undo, label: 'Undo', action: () => editor.chain().focus().undo().run(), disabled: !editor.can().undo() },
-    { icon: Redo, label: 'Redo', action: () => editor.chain().focus().redo().run(), disabled: !editor.can().redo() },
-    { icon: ImageIcon, label: 'Image', action: handleImageAdd },
-    { icon: Bold, label: 'Bold', action: () => editor.chain().focus().toggleBold().run(), active: editor.isActive('bold') },
-    { icon: Italic, label: 'Italic', action: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive('italic') },
-    { icon: UnderlineIcon, label: 'Underline', action: () => editor.chain().focus().toggleUnderline().run(), active: editor.isActive('underline') },
-    { icon: Strikethrough, label: 'Strike', action: () => editor.chain().focus().toggleStrike().run(), active: editor.isActive('strike') },
-    { icon: List, label: 'Bullet List', action: () => editor.chain().focus().toggleBulletList().run(), active: editor.isActive('bulletList') },
-    { icon: ListOrdered, label: 'Ordered List', action: () => editor.chain().focus().toggleOrderedList().run(), active: editor.isActive('orderedList') },
-    { icon: Quote, label: 'Blockquote', action: () => editor.chain().focus().toggleBlockquote().run(), active: editor.isActive('blockquote') },
-    { icon: Minus, label: 'Horizontal Rule', action: () => editor.chain().focus().setHorizontalRule().run() },
-  ];
+  const ToolbarButton = ({ onClick, disabled, active, icon: Icon, label }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      className={`p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-500 ${
+        active ? "bg-gray-100 text-black font-medium" : ""
+      } ${disabled ? "opacity-30 cursor-not-allowed" : ""}`}
+    >
+      <Icon className="w-5 h-5" strokeWidth={1.5} />
+    </button>
+  );
 
   return (
-    <div className="w-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 py-4 border-b border-gray-200">
-        {toolbarButtons.map((button, index) => {
-          const Icon = button.icon;
-          return (
-            <button
-              key={index}
-              type="button"
-              title={button.label}
-              onClick={button.action}
-              disabled={button.disabled}
-              className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${
-                button.active ? 'bg-blue-100 text-blue-600' : 'text-gray-600'
-              } ${button.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Icon className="w-5 h-5" />
-            </button>
-          );
-        })}
+    // This outer div creates the "Box" look (Border + Rounded)
+    <div className="relative flex flex-col w-full bg-white border border-gray-200 rounded-xl overflow-clip">
+      {/* Sticky Toolbar 
+          - top-[64px]: Matches the main header height
+          - z-40: Stays on top
+          - bg-white: Opaque background
+      */}
+      <div className="sticky top-[64px] z-40 bg-white border-b border-gray-100 px-6 py-3 flex flex-wrap gap-1 items-center">
+        <ToolbarButton
+          icon={Undo}
+          label="Undo"
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+        />
+        <ToolbarButton
+          icon={Redo}
+          label="Redo"
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+        />
+
+        <div className="w-px h-5 mx-2 bg-gray-200" />
+
+        <ToolbarButton
+          icon={ImageIcon}
+          label="Add Image"
+          onClick={handleImageAdd}
+        />
+        <ToolbarButton
+          icon={LinkIcon}
+          label="Link"
+          onClick={() => {
+            const url = window.prompt("URL");
+            if (url) editor.chain().focus().setLink({ href: url }).run();
+          }}
+          active={editor.isActive("link")}
+        />
+
+        <div className="w-px h-5 mx-2 bg-gray-200" />
+
+        <ToolbarButton
+          icon={Bold}
+          label="Bold"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          active={editor.isActive("bold")}
+        />
+        <ToolbarButton
+          icon={Italic}
+          label="Italic"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          active={editor.isActive("italic")}
+        />
+        <ToolbarButton
+          icon={UnderlineIcon}
+          label="Underline"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          active={editor.isActive("underline")}
+        />
+        <ToolbarButton
+          icon={Strikethrough}
+          label="Strike"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          active={editor.isActive("strike")}
+        />
+
+        <div className="w-px h-5 mx-2 bg-gray-200" />
+
+        <ToolbarButton
+          icon={List}
+          label="Bullet List"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          active={editor.isActive("bulletList")}
+        />
+        <ToolbarButton
+          icon={ListOrdered}
+          label="Ordered List"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          active={editor.isActive("orderedList")}
+        />
+        <ToolbarButton
+          icon={Quote}
+          label="Blockquote"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          active={editor.isActive("blockquote")}
+        />
+
+        <div className="w-px h-5 mx-2 bg-gray-200" />
+
+        <ToolbarButton
+          icon={Minus}
+          label="Divider"
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        />
       </div>
 
-      {/* Editor Content */}
-      <div className="mt-4">
+      <div className="flex-1 bg-white">
         <EditorContent editor={editor} />
       </div>
 
-      {/* Custom CSS for editor and image selection */}
+      {/* Character Counter */}
+      <div className="sticky bottom-0 z-40 bg-white border-t border-gray-100 px-6 py-2 flex justify-between items-center">
+        <div
+          className={`text-sm ${
+            contentLength > maxLength
+              ? "text-red-600 font-semibold"
+              : showWarning
+              ? "text-orange-500 font-medium"
+              : "text-gray-400"
+          }`}
+        >
+          {contentLength.toLocaleString()} / {maxLength.toLocaleString()}{" "}
+          characters
+          {contentLength > maxLength && " (Content too long!)"}
+          {showWarning && contentLength <= maxLength && " (Approaching limit)"}
+        </div>
+        {contentLength > maxLength && (
+          <div className="text-xs text-red-500">
+            Please remove some content or images
+          </div>
+        )}
+      </div>
+
       <style>{`
-        .ProseMirror {
-          padding: 0.5rem 0;
-          outline: none;
-        }
-
         .ProseMirror p.is-editor-empty:first-child::before {
-          content: attr(data-placeholder);
+          content: "${placeholder || "Start writing..."}";
+          color: #d1d5db;
           float: left;
-          color: #9ca3af;
-          pointer-events: none;
           height: 0;
+          pointer-events: none;
+        }
+        
+        /* SKPORT Style Image */
+        .article-image {
+            display: block;
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 8px;
+            margin: 2rem auto 0.5rem auto;
+            cursor: pointer;
+            transition: outline 0.2s;
         }
 
-        .ProseMirror img {
-          max-width: 100%;
-          height: auto;
-          display: block;
-          margin: 1rem auto;
-          border-radius: 0.5rem;
-          cursor: pointer;
-        }
-
-        .ProseMirror img.ProseMirror-selectednode {
-          outline: 3px solid #3b82f6;
-          outline-offset: 2px;
-        }
-
-        .ProseMirror ul,
-        .ProseMirror ol {
-          padding-left: 1.5rem;
-          margin: 0.5rem 0;
-        }
-
-        .ProseMirror ul {
-          list-style-type: disc;
-        }
-
-        .ProseMirror ol {
-          list-style-type: decimal;
-        }
-
-        .ProseMirror li {
-          margin: 0.25rem 0;
+        .article-image.ProseMirror-selectednode {
+            outline: 3px solid #60A5FA;
         }
 
         .ProseMirror blockquote {
-          border-left: 3px solid #e5e7eb;
-          padding-left: 1rem;
-          margin: 1rem 0;
-          font-style: italic;
-          color: #6b7280;
-        }
-
-        .ProseMirror hr {
-          border: none;
-          border-top: 2px solid #e5e7eb;
-          margin: 2rem 0;
-        }
-
-        .ProseMirror strong {
-          font-weight: 700;
-        }
-
-        .ProseMirror em {
-          font-style: italic;
-        }
-
-        .ProseMirror u {
-          text-decoration: underline;
-        }
-
-        .ProseMirror s {
-          text-decoration: line-through;
+            border-left: 3px solid #e5e7eb;
+            padding-left: 1rem;
+            color: #6b7280;
+            font-style: italic;
         }
       `}</style>
     </div>
