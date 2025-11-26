@@ -5,7 +5,7 @@ import ProfileDropdown from "./ProfileDropdown"; // Import the new component
 
 export default function Header() {
   return (
-    <header className="flex items-center justify-between h-20 px-8 py-4 bg-white">
+    <header className="flex items-center justify-between h-16 px-8 py-4 bg-white">
       {/* Left side - Placeholder for Breadcrumbs or Title */}
       <div className="flex-1"></div>
 
@@ -24,7 +24,7 @@ export default function Header() {
           </button>
         </Link>
 
-        {/* Profile Dropdown (Replaces old user section) */}
+        {/* Profile Dropdown */}
         <div className="pl-2">
           <ProfileDropdown />
         </div>
