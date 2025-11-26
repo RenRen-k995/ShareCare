@@ -15,17 +15,18 @@ class PostService {
       throw new Error("Post not found");
     }
 
-    // Logic for unique views per account
+    // Logic for unique views per account - fire and forget for better performance
     if (userId) {
       const hasViewed = post.viewedBy && post.viewedBy.includes(userId);
 
       if (!hasViewed) {
-        // Atomic update to prevent race conditions
-        await PostRepository.findByIdAndUpdate(postId, {
+        // Asynchronous update - don't wait for completion
+        PostRepository.update(postId, {
           $inc: { viewCount: 1 },
           $addToSet: { viewedBy: userId },
-        });
-        // Update the local post object to reflect the change immediately
+        }).catch((err) => console.error("Error updating view count:", err));
+
+        // Optimistically update the local post object
         post.viewCount += 1;
       }
     }

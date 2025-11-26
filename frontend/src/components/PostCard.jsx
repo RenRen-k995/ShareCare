@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Badge } from "./ui/badge";
 import {
   ThumbsUp,
@@ -84,9 +84,17 @@ export default function PostCard({ post, onUpdate }) {
   const userReacted = user && post.reactions?.some((r) => r.user === user.id);
 
   return (
-    <div
-      className="w-full p-5 mb-6 transition-all duration-200 bg-white border border-transparent cursor-pointer rounded-3xl hover:border-slate-100 hover:shadow-sm"
-      onClick={() => navigate(`/posts/${post._id}`)}
+    <Link
+      to={`/posts/${post._id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block w-full p-5 mb-6 transition-all duration-200 bg-white border border-transparent cursor-pointer rounded-3xl hover:border-slate-100 hover:shadow-sm"
+      onClick={(e) => {
+        // Allow interactions with buttons/actions inside the card
+        if (e.target.closest("button")) {
+          e.preventDefault();
+        }
+      }}
     >
       {/* --- HEADER --- */}
       <div className="flex items-start justify-between mb-3">
@@ -128,8 +136,8 @@ export default function PostCard({ post, onUpdate }) {
                 {post.category === "items" ? "Item" : post.category}
               </Badge>
 
-              {/* Status Badge - Only show if explicitly 'available' or 'donated' */}
-              {post.status === "available" && (
+              {/* Status Badge - Only show if category is 'items' and status is 'available' or 'donated' */}
+              {post.category === "items" && post.status === "available" && (
                 <Badge
                   variant="outline"
                   className="font-normal text-xs px-2.5 py-0.5 h-5 text-emerald-600 border-emerald-200 bg-emerald-50"
@@ -137,7 +145,7 @@ export default function PostCard({ post, onUpdate }) {
                   Available
                 </Badge>
               )}
-              {post.status === "donated" && (
+              {post.category === "items" && post.status === "donated" && (
                 <Badge className="font-normal text-xs px-2.5 py-0.5 h-5 bg-blue-500 text-white hover:bg-blue-600 border-transparent">
                   Donated
                 </Badge>
@@ -252,6 +260,6 @@ export default function PostCard({ post, onUpdate }) {
           <Bookmark className="w-5 h-5" />
         </button>
       </div>
-    </div>
+    </Link>
   );
 }
