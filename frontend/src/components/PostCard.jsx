@@ -19,10 +19,19 @@ export default function PostCard({ post, onUpdate }) {
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const [showReportMenu, setShowReportMenu] = useState(false);
+  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
 
   const handleReaction = async (e) => {
+    // CRITICAL: Stop navigation
+    e.preventDefault();
     e.stopPropagation();
+
     if (!user) return;
+
+    // Trigger animation
+    setIsLikeAnimating(true);
+    setTimeout(() => setIsLikeAnimating(false), 300);
+
     try {
       await postService.toggleReaction(post._id);
       if (onUpdate) onUpdate();
@@ -47,6 +56,7 @@ export default function PostCard({ post, onUpdate }) {
   };
 
   const handleContactToReceive = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     navigate("/chat", {
       state: { userId: post.author?._id, postId: post._id },
@@ -66,7 +76,6 @@ export default function PostCard({ post, onUpdate }) {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  // Helper for Category Colors
   const getCategoryStyles = (category) => {
     const styles = {
       items:
@@ -86,20 +95,11 @@ export default function PostCard({ post, onUpdate }) {
   return (
     <Link
       to={`/posts/${post._id}`}
-      target="_blank"
-      rel="noopener noreferrer"
       className="block w-full p-5 mb-6 transition-all duration-200 bg-white border border-transparent cursor-pointer rounded-3xl hover:border-slate-100 hover:shadow-sm"
-      onClick={(e) => {
-        // Allow interactions with buttons/actions inside the card
-        if (e.target.closest("button")) {
-          e.preventDefault();
-        }
-      }}
     >
       {/* --- HEADER --- */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          {/* Avatar */}
           <div className="w-10 h-10 overflow-hidden border rounded-full bg-slate-100 border-slate-50 shrink-0">
             {post.author?.avatar ? (
               <img
@@ -114,7 +114,6 @@ export default function PostCard({ post, onUpdate }) {
             )}
           </div>
 
-          {/* User Meta & Badges */}
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="font-bold text-gray-900 text-[15px]">
@@ -125,9 +124,7 @@ export default function PostCard({ post, onUpdate }) {
               </span>
             </div>
 
-            {/* BADGES ROW */}
             <div className="flex items-center gap-2">
-              {/* Category Badge with Dynamic Colors */}
               <Badge
                 className={`font-normal text-xs px-2.5 py-0.5 h-5 ${getCategoryStyles(
                   post.category
@@ -136,7 +133,6 @@ export default function PostCard({ post, onUpdate }) {
                 {post.category === "items" ? "Item" : post.category}
               </Badge>
 
-              {/* Status Badge - Only show if category is 'items' and status is 'available' or 'donated' */}
               {post.category === "items" && post.status === "available" && (
                 <Badge
                   variant="outline"
@@ -154,10 +150,12 @@ export default function PostCard({ post, onUpdate }) {
           </div>
         </div>
 
-        {/* Top Right Actions */}
         <div className="flex items-center gap-1">
           <button
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             className="flex items-center justify-center w-8 h-8 transition-colors rounded-full bg-slate-50 hover:bg-slate-100 text-slate-500"
           >
             <Plus className="w-5 h-5" />
@@ -167,6 +165,7 @@ export default function PostCard({ post, onUpdate }) {
             <button
               className="flex items-center justify-center w-8 h-8 transition-colors rounded-full text-slate-400 hover:bg-slate-50"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 setShowReportMenu(!showReportMenu);
               }}
@@ -178,6 +177,7 @@ export default function PostCard({ post, onUpdate }) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     handleReport("spam");
                   }}
                   className="w-full px-4 py-2 text-xs text-left text-slate-600 hover:bg-slate-50"
@@ -216,17 +216,19 @@ export default function PostCard({ post, onUpdate }) {
       {/* --- FOOTER ACTIONS --- */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex gap-3">
-          {/* Like Pill */}
+          {/* Like Pill with Animation */}
           <button
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
               userReacted
                 ? "bg-red-50 text-red-600"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
+            } ${isLikeAnimating ? "scale-110" : "scale-100"}`}
             onClick={handleReaction}
           >
             <ThumbsUp
-              className={`w-4 h-4 ${userReacted ? "fill-current" : ""}`}
+              className={`w-4 h-4 transition-transform ${
+                userReacted ? "fill-current scale-110" : ""
+              }`}
             />
             <span>
               {post.reactions?.length > 0 ? post.reactions.length : "Like"}
@@ -256,7 +258,13 @@ export default function PostCard({ post, onUpdate }) {
             )}
         </div>
 
-        <button className="p-2 transition-colors rounded-full text-slate-400 hover:bg-slate-50">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className="p-2 transition-colors rounded-full text-slate-400 hover:bg-slate-50"
+        >
           <Bookmark className="w-5 h-5" />
         </button>
       </div>

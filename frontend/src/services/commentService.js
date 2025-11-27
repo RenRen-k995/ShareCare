@@ -1,4 +1,4 @@
-import api from '../lib/api';
+import api from "../lib/api";
 
 export const commentService = {
   async getCommentsByPost(postId, params = {}) {
@@ -7,7 +7,7 @@ export const commentService = {
   },
 
   async createComment(commentData) {
-    const response = await api.post('/comments', commentData);
+    const response = await api.post("/comments", commentData);
     return response.data;
   },
 
@@ -19,7 +19,12 @@ export const commentService = {
   async deleteComment(id) {
     const response = await api.delete(`/comments/${id}`);
     return response.data;
-  }
+  },
+
+  async toggleLike(id) {
+    const response = await api.post(`/comments/${id}/like`);
+    return response.data;
+  },
 };
 
 export default commentService;

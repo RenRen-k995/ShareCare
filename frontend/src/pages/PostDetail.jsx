@@ -93,6 +93,21 @@ export default function PostDetail() {
     }
   };
 
+  const handleCommentLike = async (commentId) => {
+    if (!user) return;
+    try {
+      const data = await commentService.toggleLike(commentId);
+      // Update local comments state
+      setComments((prev) =>
+        prev.map((c) =>
+          c._id === commentId ? { ...c, likes: data.comment.likes } : c
+        )
+      );
+    } catch (error) {
+      console.error("Failed to toggle comment like:", error);
+    }
+  };
+
   const handleReaction = async () => {
     if (!user) return;
     try {
@@ -285,52 +300,68 @@ export default function PostDetail() {
               No comments yet. Be the first!
             </div>
           ) : (
-            comments.map((comment) => (
-              <div
-                key={comment._id}
-                className="p-5 bg-white border shadow-sm rounded-2xl border-gray-50"
-              >
-                <div className="flex gap-4">
-                  <div className="overflow-hidden bg-gray-100 rounded-full w-9 h-9 shrink-0">
-                    {comment.author?.avatar ? (
-                      <img
-                        src={comment.author.avatar}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full text-xs font-bold text-gray-400">
-                        {comment.author?.username?.[0].toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-bold text-gray-900">
-                        {comment.author?.username}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {formatDate(comment.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-gray-700 text-[15px] leading-relaxed mb-3">
-                      {comment.content}
-                    </p>
+            comments.map((comment) => {
+              const isLiked = comment.likes?.includes(user?.id || user?._id);
+              const likeCount = comment.likes?.length || 0;
 
-                    {/* Comment Actions */}
-                    <div className="flex gap-6">
-                      <button className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-xs font-medium transition-colors">
-                        <ThumbsUp className="w-3.5 h-3.5" />
-                        <span>Like</span>
-                      </button>
-                      <button className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-xs font-medium transition-colors">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Reply</span>
-                      </button>
+              return (
+                <div
+                  key={comment._id}
+                  className="p-5 bg-white border shadow-sm rounded-2xl border-gray-50"
+                >
+                  <div className="flex gap-4">
+                    <div className="overflow-hidden bg-gray-100 rounded-full w-9 h-9 shrink-0">
+                      {comment.author?.avatar ? (
+                        <img
+                          src={comment.author.avatar}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center w-full h-full text-xs font-bold text-gray-400">
+                          {comment.author?.username?.[0].toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-bold text-gray-900">
+                          {comment.author?.username}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {formatDate(comment.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-[15px] leading-relaxed mb-3">
+                        {comment.content}
+                      </p>
+
+                      {/* Comment Actions */}
+                      <div className="flex gap-6">
+                        <button
+                          onClick={() => handleCommentLike(comment._id)}
+                          className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                            isLiked
+                              ? "text-red-500"
+                              : "text-gray-400 hover:text-gray-600"
+                          }`}
+                        >
+                          <ThumbsUp
+                            className={`w-3.5 h-3.5 ${
+                              isLiked ? "fill-current" : ""
+                            }`}
+                          />
+                          <span>{likeCount > 0 ? likeCount : "Like"}</span>
+                        </button>
+                        <button className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-xs font-medium transition-colors">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Reply</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 

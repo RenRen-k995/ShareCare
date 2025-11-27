@@ -55,11 +55,11 @@ export default function Profile() {
     // We pass 'null' to rightSidebar to override the default one,
     // because we are building a custom 2-column layout inside this page
     <MainLayout rightSidebar={null}>
-      <div className="px-12 pt-5 pb-20">
+      <div className="px-20 pt-5 pb-20">
         {/* --- 1. Profile Header & Banner --- */}
-        <div className="relative mb-6">
+        <div className="mb-3 overflow-hidden bg-white border border-gray-100 shadow-sm rounded-[1.2rem]">
           {/* Banner Area */}
-          <div className="h-48 w-full rounded-[2rem] bg-gradient-to-r from-emerald-100 via-teal-100 to-blue-100 overflow-hidden relative">
+          <div className="h-48 w-full rounded-t-[1.2rem] bg-gradient-to-r from-emerald-100 via-teal-100 to-blue-100 overflow-hidden relative">
             {/* Decorative patterns */}
             <div className="absolute top-0 right-0 p-10 opacity-10">
               <Heart className="w-64 h-64 transform text-emerald-600 rotate-12" />
@@ -70,7 +70,7 @@ export default function Profile() {
           </div>
 
           {/* Profile Info Overlay */}
-          <div className="px-8 pb-4">
+          <div className="px-8 pb-8">
             <div className="flex items-end justify-between -mt-12">
               <div className="flex items-end gap-5">
                 {/* Avatar */}
@@ -115,7 +115,7 @@ export default function Profile() {
                   <div className="flex items-center gap-6 mt-1 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <span className="font-bold text-gray-900">
-                        {user.ratingCount || 0}
+                        {user.totalLikes || 0}
                       </span>{" "}
                       Likes
                     </div>
@@ -148,9 +148,9 @@ export default function Profile() {
         {/* --- 2. Main Content Grid --- */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* LEFT COLUMN: Tabs & Feed (2/3 width) */}
-          <div className="lg:col-span-2">
+          <div className="pt-3 lg:col-span-2">
             {/* Tabs */}
-            <div className="flex items-center gap-8 px-2 mb-6 border-b border-gray-100">
+            <div className="flex items-center gap-8 px-2 mb-3 border-b border-gray-100">
               <button
                 onClick={() => setActiveTab("posts")}
                 className={`pb-3 text-sm font-bold transition-colors relative ${
@@ -205,7 +205,7 @@ export default function Profile() {
               </div>
             ) : (
               // Empty State (Matches reference)
-              <div className="flex flex-col items-center justify-center py-16 bg-white rounded-[2rem] border border-dashed border-gray-200">
+              <div className="flex flex-col items-center justify-center py-16 bg-white rounded-[1.2rem] border border-dashed border-gray-200">
                 <div className="flex items-center justify-center w-32 h-32 mb-4 bg-gray-50 rounded-2xl">
                   <img
                     src="/vite.svg"
@@ -221,7 +221,7 @@ export default function Profile() {
           {/* RIGHT COLUMN: Info & Widgets (1/3 width) */}
           <div className="space-y-6">
             {/* Personal Info Card */}
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+            <div className="bg-white p-6 rounded-[1.2rem] shadow-sm border border-gray-100">
               <h3 className="mb-4 text-sm font-bold text-gray-900">
                 Personal Information
               </h3>
@@ -244,7 +244,7 @@ export default function Profile() {
             </div>
 
             {/* Creation Center Widget */}
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+            <div className="bg-white p-6 rounded-[1.2rem] shadow-sm border border-gray-100">
               <h3 className="mb-4 text-sm font-bold text-gray-900">
                 Creation Center
               </h3>

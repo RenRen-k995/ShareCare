@@ -46,6 +46,11 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // NEW FIELD: Track total likes received across all posts/comments
+    totalLikes: {
+      type: Number,
+      default: 0,
+    },
     isAdmin: {
       type: Boolean,
       default: false,
@@ -77,12 +82,10 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Method to compare passwords
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Method to get public profile (exclude password)
 userSchema.methods.toPublicJSON = function () {
   return {
     id: this._id,
@@ -93,6 +96,7 @@ userSchema.methods.toPublicJSON = function () {
     bio: this.bio,
     rating: this.rating,
     ratingCount: this.ratingCount,
+    totalLikes: this.totalLikes || 0, // Include totalLikes in public profile
     isAdmin: this.isAdmin,
     createdAt: this.createdAt,
   };

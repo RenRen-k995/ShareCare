@@ -119,7 +119,7 @@ export default function ProfileDropdown() {
             <div className="flex justify-between gap-6 px-2 text-center">
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-900">
-                  {user.ratingCount || 0}
+                  {user.totalLikes || 0}
                 </div>
                 <div className="text-xs text-gray-400">Likes</div>
               </div>
