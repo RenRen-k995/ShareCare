@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import authService from "../services/authService";
 import MainLayout from "../components/layout/MainLayout";
+import { uploadImage } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -20,13 +21,50 @@ import {
 // --- Sub-Component: Edit Profile Form ---
 const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
   const [formData, setFormData] = useState({
+    username: user?.username || "",
     fullName: user?.fullName || "",
     bio: user?.bio || "",
     avatar: user?.avatar || "",
   });
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Handle Avatar File Upload
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB");
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+      // Use existing utility to upload to /api/posts/upload-image
+      const imageUrl = await uploadImage(file);
+
+      // Update form state with new URL
+      setFormData((prev) => ({ ...prev, avatar: imageUrl }));
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      alert("Failed to upload avatar");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -46,7 +84,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
         <div className="flex items-center gap-6 p-4 border bg-slate-50 rounded-2xl border-slate-100">
           <div className="relative group">
             <div className="w-24 h-24 overflow-hidden border-4 border-white rounded-full shadow-md bg-slate-200">
-              {user?.avatar ? (
+              {formData.avatar ? (
                 <img
                   src={user.avatar}
                   alt="Profile"
@@ -65,6 +103,14 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
             >
               <Camera className="w-6 h-6" />
             </button>
+            {/* Hidden Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
           </div>
           <div>
             <h3 className="font-semibold text-gray-900">Profile Picture</h3>
@@ -77,14 +123,17 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
                 variant="outline"
                 size="sm"
                 className="rounded-full"
+                onClick={handleAvatarClick}
+                disabled={uploadingAvatar}
               >
-                Change Avatar
+                {uploadingAvatar ? "Uploading..." : "Change Avatar"}
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 className="text-red-500 rounded-full hover:text-red-600"
+                onClick={() => setFormData((prev) => ({ ...prev, avatar: "" }))}
               >
                 Remove
               </Button>
@@ -95,17 +144,35 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
         {/* Form Fields */}
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Display Name</Label>
+            <Label htmlFor="userName">Display Name</Label>
             <Input
-              id="fullName"
-              name="fullName"
-              value={formData.fullName}
+              id="userName"
+              name="username"
+              value={formData.username}
               onChange={handleChange}
               placeholder="How should we call you?"
               className="border-gray-200 rounded-xl focus:border-cyan-400 focus:ring-cyan-400"
             />
             <p className="text-xs text-gray-400">
               This name will be displayed on your profile and posts.
+            </p>
+          </div>
+
+          {/* Full Name */}
+          <div className="space-y-2">
+            <Label htmlFor="fullName" className="text-gray-700">
+              Full Name
+            </Label>
+            <Input
+              id="fullName"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              placeholder="e.g. John Doe"
+              className="h-12 transition-all border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:border-cyan-400 focus:ring-cyan-400"
+            />
+            <p className="pl-1 text-xs text-gray-400">
+              Your real name, useful for verifications.
             </p>
           </div>
 
@@ -160,6 +227,46 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
 };
 
 const SecurityForm = ({ user }) => {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [passwords, setPasswords] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const handlePasswordUpdate = async () => {
+    setMessage("");
+    setError("");
+
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setError("New passwords do not match");
+      return;
+    }
+    if (passwords.newPassword.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await authService.changePassword({
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+      });
+      setMessage("Password updated successfully");
+      setPasswords({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update password");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="space-y-8 duration-300 animate-in fade-in slide-in-from-right-4">
       <div className="flex flex-col gap-6">
@@ -174,6 +281,18 @@ const SecurityForm = ({ user }) => {
             account.
           </p>
         </div>
+
+        {/* Feedback Messages */}
+        {message && (
+          <div className="p-3 text-sm text-center border rounded-lg bg-emerald-50 text-emerald-600 border-emerald-100">
+            <CheckCircle2 className="inline w-4 h-4 mr-2" /> {message}
+          </div>
+        )}
+        {error && (
+          <div className="p-3 text-sm text-center text-red-600 border border-red-100 rounded-lg bg-red-50">
+            <AlertCircle className="inline w-4 h-4 mr-2" /> {error}
+          </div>
+        )}
 
         <div className="space-y-6">
           <div className="space-y-2">
@@ -202,6 +321,14 @@ const SecurityForm = ({ user }) => {
                   id="current-password"
                   type="password"
                   className="rounded-xl"
+                  placeholder="Enter current password"
+                  value={passwords.currentPassword}
+                  onChange={(e) =>
+                    setPasswords({
+                      ...passwords,
+                      currentPassword: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -211,6 +338,14 @@ const SecurityForm = ({ user }) => {
                     id="new-password"
                     type="password"
                     className="rounded-xl"
+                    placeholder="Enter new password"
+                    value={passwords.newPassword}
+                    onChange={(e) =>
+                      setPasswords({
+                        ...passwords,
+                        newPassword: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -219,6 +354,14 @@ const SecurityForm = ({ user }) => {
                     id="confirm-password"
                     type="password"
                     className="rounded-xl"
+                    placeholder="Confirm new password"
+                    value={passwords.confirmPassword}
+                    onChange={(e) =>
+                      setPasswords({
+                        ...passwords,
+                        confirmPassword: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -227,6 +370,12 @@ const SecurityForm = ({ user }) => {
               <Button
                 variant="secondary"
                 className="text-white rounded-full bg-slate-800 hover:bg-slate-900"
+                onClick={handlePasswordUpdate}
+                disabled={
+                  loading ||
+                  !passwords.currentPassword ||
+                  !passwords.newPassword
+                }
               >
                 Update Password
               </Button>

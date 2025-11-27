@@ -1,13 +1,25 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Bell, Plus } from "lucide-react";
-import ProfileDropdown from "./ProfileDropdown"; // Import the new component
+import { Link, useLocation } from "react-router-dom";
+import { Bell, Plus, Heart } from "lucide-react";
+import ProfileDropdown from "./ProfileDropdown";
 
 export default function Header() {
+  const location = useLocation();
+  const isSettingsPage = location.pathname === "/settings";
+
   return (
-    <header className="flex items-center justify-between h-16 px-8 py-4 bg-white">
-      {/* Left side - Placeholder for Breadcrumbs or Title */}
-      <div className="flex-1"></div>
+    <header className="flex items-center justify-between h-16 px-8 py-4 bg-white border-b border-gray-100">
+      {/* Left side - Only show Logo on Settings page */}
+      <div className="flex items-center min-w-[200px]">
+        {isSettingsPage && (
+          <Link to="/" className="flex items-center space-x-3 group">
+            <div className="flex items-center justify-center w-10 h-10 transition-transform bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl group-hover:scale-105">
+              <Heart className="w-6 h-6 text-white" fill="currentColor" />
+            </div>
+            <span className="text-2xl font-bold text-gray-900">ShareCare</span>
+          </Link>
+        )}
+      </div>
 
       {/* Right side - Actions */}
       <div className="flex items-center space-x-4">

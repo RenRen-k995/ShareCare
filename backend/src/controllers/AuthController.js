@@ -5,7 +5,6 @@ class AuthController {
     try {
       const { username, email, password, fullName } = req.body;
 
-      // Validate required fields
       if (!username || !email || !password) {
         return res
           .status(400)
@@ -58,22 +57,45 @@ class AuthController {
     }
   }
 
+  // UPDATED: Added username to update logic
   async updateProfile(req, res, next) {
     try {
-      const { fullName, bio, avatar } = req.body;
+      const { fullName, bio, avatar, username } = req.body;
       const updateData = {};
 
       if (fullName !== undefined) updateData.fullName = fullName;
       if (bio !== undefined) updateData.bio = bio;
       if (avatar !== undefined) updateData.avatar = avatar;
+      if (username !== undefined) updateData.username = username;
 
       const user = await AuthService.updateProfile(req.user.id, updateData);
 
       res.json({
         message: "Profile updated successfully",
-        // Make sure to return the transformed user object
         user: user.toPublicJSON ? user.toPublicJSON() : user,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async changePassword(req, res, next) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res
+          .status(400)
+          .json({ message: "Current and new passwords are required" });
+      }
+
+      await AuthService.changePassword(
+        req.user.id,
+        currentPassword,
+        newPassword
+      );
+
+      res.json({ message: "Password updated successfully" });
     } catch (error) {
       next(error);
     }
