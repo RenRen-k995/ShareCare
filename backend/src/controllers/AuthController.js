@@ -1,4 +1,4 @@
-import AuthService from '../services/AuthService.js';
+import AuthService from "../services/AuthService.js";
 
 class AuthController {
   async register(req, res, next) {
@@ -7,14 +7,21 @@ class AuthController {
 
       // Validate required fields
       if (!username || !email || !password) {
-        return res.status(400).json({ message: 'Username, email, and password are required' });
+        return res
+          .status(400)
+          .json({ message: "Username, email, and password are required" });
       }
 
-      const result = await AuthService.register({ username, email, password, fullName });
-      
+      const result = await AuthService.register({
+        username,
+        email,
+        password,
+        fullName,
+      });
+
       res.status(201).json({
-        message: 'User registered successfully',
-        ...result
+        message: "User registered successfully",
+        ...result,
       });
     } catch (error) {
       next(error);
@@ -26,14 +33,16 @@ class AuthController {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required' });
+        return res
+          .status(400)
+          .json({ message: "Email and password are required" });
       }
 
       const result = await AuthService.login(email, password);
 
       res.json({
-        message: 'Login successful',
-        ...result
+        message: "Login successful",
+        ...result,
       });
     } catch (error) {
       next(error);
@@ -59,10 +68,11 @@ class AuthController {
       if (avatar !== undefined) updateData.avatar = avatar;
 
       const user = await AuthService.updateProfile(req.user.id, updateData);
-      
+
       res.json({
-        message: 'Profile updated successfully',
-        user
+        message: "Profile updated successfully",
+        // Make sure to return the transformed user object
+        user: user.toPublicJSON ? user.toPublicJSON() : user,
       });
     } catch (error) {
       next(error);
