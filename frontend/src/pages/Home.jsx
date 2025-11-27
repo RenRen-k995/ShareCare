@@ -37,6 +37,10 @@ export default function Home() {
     }
   };
 
+  const handleDeletePost = (postId) => {
+    setPosts((prevPosts) => prevPosts.filter((p) => p._id !== postId));
+  };
+
   useEffect(() => {
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,7 +78,12 @@ export default function Home() {
         ) : (
           <div className="space-y-3">
             {posts.map((post) => (
-              <PostCard key={post._id} post={post} onUpdate={fetchPosts} />
+              <PostCard
+                key={post._id}
+                post={post}
+                onUpdate={fetchPosts}
+                onDelete={handleDeletePost}
+              />
             ))}
           </div>
         )}

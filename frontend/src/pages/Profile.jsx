@@ -42,6 +42,10 @@ export default function Profile() {
     fetchUserPosts();
   }, [user]);
 
+  const handleDeletePost = (postId) => {
+    setUserPosts((prevPosts) => prevPosts.filter((p) => p._id !== postId));
+  };
+
   if (!user) return null;
 
   const formatDate = (dateString) => {
@@ -200,7 +204,11 @@ export default function Profile() {
             ) : userPosts.length > 0 ? (
               <div className="space-y-4">
                 {userPosts.map((post) => (
-                  <PostCard key={post._id} post={post} />
+                  <PostCard
+                    key={post._id}
+                    post={post}
+                    onDelete={handleDeletePost}
+                  />
                 ))}
               </div>
             ) : (

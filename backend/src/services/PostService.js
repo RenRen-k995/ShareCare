@@ -52,6 +52,15 @@ class PostService {
     if (post.author._id.toString() !== userId && !isAdmin) {
       throw new Error("You are not authorized to delete this post");
     }
+
+    // Subtract likes from author's totalLikes before deleting
+    const likesCount = post.reactions?.length || 0;
+    if (likesCount > 0) {
+      await User.findByIdAndUpdate(post.author._id, {
+        $inc: { totalLikes: -likesCount },
+      });
+    }
+
     await PostRepository.delete(postId);
     return { message: "Post deleted successfully" };
   }
@@ -109,8 +118,9 @@ class PostService {
         $inc: { totalLikes: 1 },
       });
     }
-
-    return updatedPost;
+    // Re-fetch to ensure author's totalLikes reflects latest value
+    const fresh = await PostRepository.findById(postId);
+    return fresh;
   }
 
   async getUserPosts(userId, options = {}) {

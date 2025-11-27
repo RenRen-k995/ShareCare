@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Badge } from "./ui/badge";
 import {
@@ -14,29 +14,70 @@ import postService from "../services/postService";
 import reportService from "../services/reportService";
 import { extractTextFromHtml } from "../utils/htmlUtils";
 
-export default function PostCard({ post, onUpdate }) {
+export default function PostCard({ post, onUpdate, onDelete }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
 
+  // Optimistic UI State
+  const [localLikes, setLocalLikes] = useState(post.reactions?.length || 0);
+  const [localIsLiked, setLocalIsLiked] = useState(
+    user && post.reactions?.some((r) => r.user === user.id)
+  );
+
+  // Sync state if props change (e.g. from a hard refresh)
+  useEffect(() => {
+    setLocalLikes(post.reactions?.length || 0);
+    setLocalIsLiked(user && post.reactions?.some((r) => r.user === user.id));
+  }, [post.reactions, user]);
+
   const handleReaction = async (e) => {
-    // CRITICAL: Stop navigation
     e.preventDefault();
     e.stopPropagation();
 
     if (!user) return;
 
-    // Trigger animation
+    // 1. Trigger Animation
     setIsLikeAnimating(true);
     setTimeout(() => setIsLikeAnimating(false), 300);
 
+    // 2. Optimistic Update (Immediate visual feedback)
+    const previousIsLiked = localIsLiked;
+    const previousLikes = localLikes;
+
+    setLocalIsLiked(!previousIsLiked);
+    setLocalLikes(previousIsLiked ? previousLikes - 1 : previousLikes + 1);
+
     try {
+      // 3. API Call in background
       await postService.toggleReaction(post._id);
-      if (onUpdate) onUpdate();
+      // We do NOT call onUpdate() here to avoid page reload/flicker
     } catch (error) {
       console.error("Failed to toggle reaction:", error);
+      // Revert on error
+      setLocalIsLiked(previousIsLiked);
+      setLocalLikes(previousLikes);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!user) return;
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+    try {
+      await postService.deletePost(post._id);
+      setShowReportMenu(false);
+      // Immediate UI update
+      if (onDelete) {
+        onDelete(post._id);
+      } else if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      alert("Failed to delete post");
     }
   };
 
@@ -90,12 +131,18 @@ export default function PostCard({ post, onUpdate }) {
     return styles[category] || styles["other"];
   };
 
-  const userReacted = user && post.reactions?.some((r) => r.user === user.id);
-
   return (
     <Link
       to={`/posts/${post._id}`}
+      target="_blank"
+      rel="noopener noreferrer"
       className="block w-full p-5 mb-6 transition-all duration-200 bg-white border border-transparent cursor-pointer rounded-3xl hover:border-slate-100 hover:shadow-sm"
+      onClick={(e) => {
+        // Prevent navigation if clicking on interactive elements
+        if (e.target.closest("button") || e.target.closest('[role="button"]')) {
+          e.preventDefault();
+        }
+      }}
     >
       {/* --- HEADER --- */}
       <div className="flex items-start justify-between mb-3">
@@ -174,16 +221,29 @@ export default function PostCard({ post, onUpdate }) {
             </button>
             {showReportMenu && (
               <div className="absolute right-0 z-10 w-40 py-1 overflow-hidden bg-white border shadow-lg top-8 border-slate-100 rounded-xl">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    handleReport("spam");
-                  }}
-                  className="w-full px-4 py-2 text-xs text-left text-slate-600 hover:bg-slate-50"
-                >
-                  Report Spam
-                </button>
+                {user && post.author?._id === user.id ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleDelete();
+                    }}
+                    className="w-full px-4 py-2 text-xs text-left text-red-600 hover:bg-red-50"
+                  >
+                    Delete Post
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleReport("spam");
+                    }}
+                    className="w-full px-4 py-2 text-xs text-left text-slate-600 hover:bg-slate-50"
+                  >
+                    Report Spam
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -216,23 +276,21 @@ export default function PostCard({ post, onUpdate }) {
       {/* --- FOOTER ACTIONS --- */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex gap-3">
-          {/* Like Pill with Animation */}
+          {/* Like Pill with Animation - Using Theme Color (Cyan/Teal) */}
           <button
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-              userReacted
-                ? "bg-red-50 text-red-600"
+              localIsLiked
+                ? "bg-cyan-50 text-cyan-500" // Theme match
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             } ${isLikeAnimating ? "scale-110" : "scale-100"}`}
             onClick={handleReaction}
           >
             <ThumbsUp
               className={`w-4 h-4 transition-transform ${
-                userReacted ? "fill-current scale-110" : ""
+                localIsLiked ? "fill-current scale-110" : ""
               }`}
             />
-            <span>
-              {post.reactions?.length > 0 ? post.reactions.length : "Like"}
-            </span>
+            <span>{localLikes > 0 ? localLikes : "Like"}</span>
           </button>
 
           {/* Comment Pill */}

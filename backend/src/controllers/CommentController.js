@@ -75,9 +75,17 @@ class CommentController {
         req.params.id,
         req.user.id
       );
+
+      // Fetch updated author data to return current totalLikes
+      const User = (await import("../models/User.js")).default;
+      const updatedAuthor = await User.findById(comment.author._id).select(
+        "totalLikes"
+      );
+
       res.json({
         message: "Comment like toggled",
         comment,
+        authorTotalLikes: updatedAuthor?.totalLikes || 0,
       });
     } catch (error) {
       next(error);
