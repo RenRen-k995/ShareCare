@@ -13,6 +13,7 @@ import {
   Heart,
   MessageSquare,
   Star,
+  User as UserIcon,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 
@@ -98,23 +99,49 @@ export default function Profile() {
                 <div className="mb-2">
                   <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
                     {user.fullName || user.username}
-                    {/* ShareCare Gender/Verified icon placeholder */}
-                    <span className="text-blue-400">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 20v-9" />
-                        <path d="M12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" />
-                        <path d="M12 11l4-4" />
-                      </svg>
-                    </span>
+                    {/* Gender Icon */}
+                    {user.gender === "male" && (
+                      <span className="text-blue-500" title="Male">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="10" cy="14" r="7" />
+                          <line x1="14.5" y1="9.5" x2="21" y2="3" />
+                          <line x1="17" y1="3" x2="21" y2="3" />
+                          <line x1="21" y1="3" x2="21" y2="7" />
+                        </svg>
+                      </span>
+                    )}
+                    {user.gender === "female" && (
+                      <span className="text-pink-500" title="Female">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="12" cy="8" r="7" />
+                          <line x1="12" y1="15" x2="12" y2="23" />
+                          <line x1="8" y1="19" x2="16" y2="19" />
+                        </svg>
+                      </span>
+                    )}
+                    {user.gender === "other" && (
+                      <span className="text-purple-500" title="Other">
+                        <UserIcon className="w-4 h-4" />
+                      </span>
+                    )}
                   </h1>
                   <div className="flex items-center gap-6 mt-1 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
@@ -236,8 +263,10 @@ export default function Profile() {
 
               <div className="mb-4 space-y-4">
                 <div className="flex items-start gap-3 text-sm text-gray-600">
-                  <MessageSquare className="w-4 h-4 mt-0.5 text-gray-400" />
-                  <p className="leading-relaxed">{user.bio || "No bio yet"}</p>
+                  <MessageSquare className="w-4 h-4 mt-0.5 text-gray-400 shrink-0" />
+                  <p className="leading-relaxed break-all">
+                    {user.bio || "No bio yet"}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-3 text-sm text-gray-600">

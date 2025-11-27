@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
+import DatePicker from "../components/DatePicker";
 import {
   User,
   ShieldCheck,
@@ -25,6 +26,10 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
     fullName: user?.fullName || "",
     bio: user?.bio || "",
     avatar: user?.avatar || "",
+    gender: user?.gender || "",
+    dateOfBirth: user?.dateOfBirth
+      ? new Date(user.dateOfBirth).toISOString().split("T")[0]
+      : "",
   });
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -86,7 +91,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
             <div className="w-24 h-24 overflow-hidden border-4 border-white rounded-full shadow-md bg-slate-200">
               {formData.avatar ? (
                 <img
-                  src={user.avatar}
+                  src={formData.avatar}
                   alt="Profile"
                   className="object-cover w-full h-full"
                 />
@@ -99,7 +104,8 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
             <button
               type="button"
               className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white transition-opacity rounded-full opacity-0 bg-black/40 group-hover:opacity-100"
-              onClick={() => alert("Avatar upload implementation required")}
+              onClick={handleAvatarClick}
+              disabled={uploadingAvatar}
             >
               <Camera className="w-6 h-6" />
             </button>
@@ -175,7 +181,46 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
               Your real name, useful for verifications.
             </p>
           </div>
-
+          {/* Date of Birth */}
+          <div className="space-y-2">
+            <Label htmlFor="dateOfBirth" className="text-gray-700">
+              Date of Birth
+            </Label>
+            <DatePicker
+              value={formData.dateOfBirth}
+              onChange={(date) =>
+                setFormData({ ...formData, dateOfBirth: date })
+              }
+              placeholder="Select your date of birth"
+            />
+          </div>
+          {/* Gender */}
+          <div className="space-y-2">
+            <Label className="text-gray-700">Gender</Label>
+            <div className="flex gap-4">
+              {[
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+                { value: "other", label: "Other" },
+                { value: "prefer-not-to-say", label: "Prefer not to say" },
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="gender"
+                    value={option.value}
+                    checked={formData.gender === option.value}
+                    onChange={handleChange}
+                    className="w-4 h-4 border-gray-300 text-cyan-500 focus:ring-cyan-400"
+                  />
+                  <span className="text-sm text-gray-700">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="bio">Bio</Label>
             <Textarea
@@ -226,7 +271,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
   );
 };
 
-const SecurityForm = ({ user }) => {
+const SecurityForm = ({ user, onUpdateUser }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -234,6 +279,11 @@ const SecurityForm = ({ user }) => {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  });
+  const [emailChange, setEmailChange] = useState({
+    newEmail: "",
+    password: "",
+    showDialog: false,
   });
 
   const handlePasswordUpdate = async () => {
@@ -267,6 +317,34 @@ const SecurityForm = ({ user }) => {
       setLoading(false);
     }
   };
+
+  const handleEmailChange = async () => {
+    setMessage("");
+    setError("");
+
+    if (!emailChange.newEmail || !emailChange.password) {
+      setError("Email and password are required");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await authService.changeEmail({
+        newEmail: emailChange.newEmail,
+        password: emailChange.password,
+      });
+      if (result.user) {
+        onUpdateUser(result.user);
+      }
+      setMessage("Email updated successfully");
+      setEmailChange({ newEmail: "", password: "", showDialog: false });
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8 duration-300 animate-in fade-in slide-in-from-right-4">
       <div className="flex flex-col gap-6">
@@ -277,8 +355,7 @@ const SecurityForm = ({ user }) => {
             Security Recommendation
           </h3>
           <p className="text-xs text-yellow-700">
-            For better security, enable two-factor authentication on your
-            account.
+            For better security, please change your password regularly.
           </p>
         </div>
 
@@ -297,19 +374,83 @@ const SecurityForm = ({ user }) => {
         <div className="space-y-6">
           <div className="space-y-2">
             <Label>Email Address</Label>
-            <div className="flex gap-4">
-              <Input
-                value={user?.email}
-                disabled
-                className="bg-slate-50 text-slate-500 border-slate-200 rounded-xl"
-              />
-              <Button
-                variant="outline"
-                className="rounded-xl whitespace-nowrap"
-              >
-                Change Email
-              </Button>
-            </div>
+            {!emailChange.showDialog ? (
+              <div className="flex gap-4">
+                <Input
+                  value={user?.email}
+                  className="bg-slate-50 text-slate-500 border-slate-200 rounded-xl"
+                />
+                <Button
+                  variant="outline"
+                  className="rounded-xl whitespace-nowrap"
+                  onClick={() =>
+                    setEmailChange({ ...emailChange, showDialog: true })
+                  }
+                >
+                  Change Email
+                </Button>
+              </div>
+            ) : (
+              <div className="p-4 space-y-3 border bg-slate-50 rounded-xl border-slate-200">
+                <div className="space-y-2">
+                  <Label htmlFor="new-email">New Email Address</Label>
+                  <Input
+                    id="new-email"
+                    type="email"
+                    className="rounded-xl"
+                    placeholder="Enter new email"
+                    value={emailChange.newEmail}
+                    onChange={(e) =>
+                      setEmailChange({
+                        ...emailChange,
+                        newEmail: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email-password">Confirm Password</Label>
+                  <Input
+                    id="email-password"
+                    type="password"
+                    className="rounded-xl"
+                    placeholder="Enter your password"
+                    value={emailChange.password}
+                    onChange={(e) =>
+                      setEmailChange({
+                        ...emailChange,
+                        password: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    className="rounded-xl"
+                    onClick={() =>
+                      setEmailChange({
+                        newEmail: "",
+                        password: "",
+                        showDialog: false,
+                      })
+                    }
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="rounded-xl"
+                    onClick={handleEmailChange}
+                    disabled={
+                      loading || !emailChange.newEmail || !emailChange.password
+                    }
+                  >
+                    Update Email
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-4 space-y-4 border-t border-gray-100">
@@ -480,7 +621,9 @@ export default function Settings() {
                 />
               )}
 
-              {activeTab === "security" && <SecurityForm user={user} />}
+              {activeTab === "security" && (
+                <SecurityForm user={user} onUpdateUser={updateUser} />
+              )}
             </div>
           </div>
         </div>

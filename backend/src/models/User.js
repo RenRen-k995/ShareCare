@@ -36,6 +36,15 @@ const userSchema = new mongoose.Schema(
       maxlength: 500,
       default: "",
     },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other", "prefer-not-to-say", ""],
+      default: "",
+    },
+    dateOfBirth: {
+      type: Date,
+      default: null,
+    },
     rating: {
       type: Number,
       default: 0,
@@ -94,6 +103,8 @@ userSchema.methods.toPublicJSON = function () {
     fullName: this.fullName,
     avatar: this.avatar,
     bio: this.bio,
+    gender: this.gender,
+    dateOfBirth: this.dateOfBirth,
     rating: this.rating,
     ratingCount: this.ratingCount,
     totalLikes: this.totalLikes || 0, // Include totalLikes in public profile

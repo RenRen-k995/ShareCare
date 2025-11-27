@@ -107,6 +107,28 @@ class AuthService {
 
     return true;
   }
+
+  async changeEmail(userId, newEmail, password) {
+    const user = await UserRepository.findByIdWithPassword(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      throw new Error("Incorrect password");
+    }
+
+    const existingUser = await UserRepository.findByEmail(newEmail);
+    if (existingUser && existingUser._id.toString() !== userId) {
+      throw new Error("Email is already in use");
+    }
+
+    user.email = newEmail;
+    await user.save();
+
+    return user;
+  }
 }
 
 export default new AuthService();

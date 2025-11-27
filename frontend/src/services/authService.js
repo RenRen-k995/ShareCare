@@ -37,6 +37,19 @@ export const authService = {
     return response.data;
   },
 
+  async changePassword(passwordData) {
+    const response = await api.post("/auth/change-password", passwordData);
+    return response.data;
+  },
+
+  async changeEmail(emailData) {
+    const response = await api.post("/auth/change-email", emailData);
+    if (response.data.user) {
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+
   getCurrentUser() {
     const userStr = localStorage.getItem("user");
     return userStr ? JSON.parse(userStr) : null;
