@@ -36,6 +36,15 @@ const userSchema = new mongoose.Schema(
       maxlength: 500,
       default: "",
     },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other", "prefer-not-to-say", ""],
+      default: "",
+    },
+    dateOfBirth: {
+      type: Date,
+      default: null,
+    },
     rating: {
       type: Number,
       default: 0,
@@ -43,6 +52,11 @@ const userSchema = new mongoose.Schema(
       max: 5,
     },
     ratingCount: {
+      type: Number,
+      default: 0,
+    },
+    // NEW FIELD: Track total likes received across all posts/comments
+    totalLikes: {
       type: Number,
       default: 0,
     },
@@ -77,12 +91,10 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Method to compare passwords
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Method to get public profile (exclude password)
 userSchema.methods.toPublicJSON = function () {
   return {
     id: this._id,
@@ -91,8 +103,11 @@ userSchema.methods.toPublicJSON = function () {
     fullName: this.fullName,
     avatar: this.avatar,
     bio: this.bio,
+    gender: this.gender,
+    dateOfBirth: this.dateOfBirth,
     rating: this.rating,
     ratingCount: this.ratingCount,
+    totalLikes: this.totalLikes || 0, // Include totalLikes in public profile
     isAdmin: this.isAdmin,
     createdAt: this.createdAt,
   };

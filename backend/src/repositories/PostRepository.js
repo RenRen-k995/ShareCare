@@ -1,4 +1,4 @@
-import Post from '../models/Post.js';
+import Post from "../models/Post.js";
 
 class PostRepository {
   async create(postData) {
@@ -7,12 +7,17 @@ class PostRepository {
   }
 
   async findById(id) {
-    return await Post.findById(id).populate('author', 'username fullName avatar');
+    return await Post.findById(id).populate(
+      "author",
+      "username fullName avatar totalLikes"
+    );
   }
 
   async update(id, updateData) {
-    return await Post.findByIdAndUpdate(id, updateData, { new: true })
-      .populate('author', 'username fullName avatar');
+    return await Post.findByIdAndUpdate(id, updateData, { new: true }).populate(
+      "author",
+      "username fullName avatar totalLikes"
+    );
   }
 
   async delete(id) {
@@ -20,11 +25,11 @@ class PostRepository {
   }
 
   async findAll(query = {}, options = {}) {
-    const { page = 1, limit = 10, sort = '-createdAt' } = options;
+    const { page = 1, limit = 10, sort = "-createdAt" } = options;
     const skip = (page - 1) * limit;
 
     const posts = await Post.find(query)
-      .populate('author', 'username fullName avatar')
+      .populate("author", "username fullName avatar totalLikes")
       .sort(sort)
       .skip(skip)
       .limit(limit);
@@ -40,12 +45,12 @@ class PostRepository {
 
     const searchQuery = {
       ...query,
-      $text: { $search: searchTerm }
+      $text: { $search: searchTerm },
     };
 
     const posts = await Post.find(searchQuery)
-      .populate('author', 'username fullName avatar')
-      .sort({ score: { $meta: 'textScore' } })
+      .populate("author", "username fullName avatar totalLikes")
+      .sort({ score: { $meta: "textScore" } })
       .skip(skip)
       .limit(limit);
 
@@ -55,7 +60,11 @@ class PostRepository {
   }
 
   async incrementViewCount(id) {
-    return await Post.findByIdAndUpdate(id, { $inc: { viewCount: 1 } }, { new: true });
+    return await Post.findByIdAndUpdate(
+      id,
+      { $inc: { viewCount: 1 } },
+      { new: true }
+    );
   }
 
   async addReaction(postId, userId, reactionType) {
@@ -63,7 +72,7 @@ class PostRepository {
       postId,
       { $push: { reactions: { user: userId, type: reactionType } } },
       { new: true }
-    );
+    ).populate("author", "username fullName avatar totalLikes");
   }
 
   async removeReaction(postId, userId) {
@@ -71,7 +80,7 @@ class PostRepository {
       postId,
       { $pull: { reactions: { user: userId } } },
       { new: true }
-    );
+    ).populate("author", "username fullName avatar totalLikes");
   }
 
   async findByAuthor(authorId, options = {}) {

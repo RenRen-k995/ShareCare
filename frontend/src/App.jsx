@@ -14,6 +14,8 @@ import CreatePost from "./pages/CreatePost";
 import PostDetail from "./pages/PostDetail";
 import AdminPanel from "./pages/AdminPanel";
 import Chat from "./pages/Chat";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Setting";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -88,6 +90,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Chat />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               }
             />

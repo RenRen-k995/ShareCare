@@ -6,7 +6,7 @@ export default function CreatorProfile({ author }) {
   if (!author) return null;
 
   return (
-    <div className="flex flex-col pt-6 gap-4">
+    <div className="flex flex-col gap-4 pt-6">
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
         <h3 className="font-bold text-gray-900 mb-6 text-[15px]">
           Creator Profile
@@ -58,7 +58,7 @@ export default function CreatorProfile({ author }) {
         <div className="flex items-center justify-between px-1">
           <div className="text-center">
             <div className="text-lg font-bold text-gray-900">
-              {author.ratingCount || 768}
+              {author.totalLikes || 0}
             </div>
             <div className="text-[11px] text-gray-400 uppercase tracking-wide font-medium">
               Likes

@@ -1,4 +1,5 @@
 import PostService from "../services/PostService.js";
+import AuthService from "../services/AuthService.js"; // Import AuthService
 
 class PostController {
   async createPost(req, res, next) {
@@ -31,9 +32,26 @@ class PostController {
 
   async getPost(req, res, next) {
     try {
-      // Pass req.user.id if it exists (authentication middleware might run before this, or it might be public)
-      // If your route is public, you need to extract user from token manually if middleware didn't
-      const userId = req.user ? req.user.id : null;
+      let userId = null;
+
+      // Check if user is already authenticated (via middleware)
+      if (req.user) {
+        userId = req.user.id;
+      }
+      // If not, check for token in headers manually (since this is a public route)
+      else if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith("Bearer ")
+      ) {
+        try {
+          const token = req.headers.authorization.split(" ")[1];
+          const decoded = AuthService.verifyToken(token);
+          userId = decoded.id;
+        } catch (err) {
+          // Token invalid or expired - treat as guest, don't crash
+          console.log("Optional auth failed for view count:", err.message);
+        }
+      }
 
       const post = await PostService.getPostById(req.params.id, userId);
       res.json({ post });

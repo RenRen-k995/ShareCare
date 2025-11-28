@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Badge } from "./ui/badge";
 import {
   ThumbsUp,
@@ -14,20 +14,70 @@ import postService from "../services/postService";
 import reportService from "../services/reportService";
 import { extractTextFromHtml } from "../utils/htmlUtils";
 
-export default function PostCard({ post, onUpdate }) {
+export default function PostCard({ post, onUpdate, onDelete }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   const [showReportMenu, setShowReportMenu] = useState(false);
+  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+
+  // Optimistic UI State
+  const [localLikes, setLocalLikes] = useState(post.reactions?.length || 0);
+  const [localIsLiked, setLocalIsLiked] = useState(
+    user && post.reactions?.some((r) => r.user === user.id)
+  );
+
+  // Sync state if props change (e.g. from a hard refresh)
+  useEffect(() => {
+    setLocalLikes(post.reactions?.length || 0);
+    setLocalIsLiked(user && post.reactions?.some((r) => r.user === user.id));
+  }, [post.reactions, user]);
 
   const handleReaction = async (e) => {
+    e.preventDefault();
     e.stopPropagation();
+
     if (!user) return;
+
+    // 1. Trigger Animation
+    setIsLikeAnimating(true);
+    setTimeout(() => setIsLikeAnimating(false), 300);
+
+    // 2. Optimistic Update (Immediate visual feedback)
+    const previousIsLiked = localIsLiked;
+    const previousLikes = localLikes;
+
+    setLocalIsLiked(!previousIsLiked);
+    setLocalLikes(previousIsLiked ? previousLikes - 1 : previousLikes + 1);
+
     try {
+      // 3. API Call in background
       await postService.toggleReaction(post._id);
-      if (onUpdate) onUpdate();
+      // We do NOT call onUpdate() here to avoid page reload/flicker
     } catch (error) {
       console.error("Failed to toggle reaction:", error);
+      // Revert on error
+      setLocalIsLiked(previousIsLiked);
+      setLocalLikes(previousLikes);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!user) return;
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+    try {
+      await postService.deletePost(post._id);
+      setShowReportMenu(false);
+      // Immediate UI update
+      if (onDelete) {
+        onDelete(post._id);
+      } else if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      alert("Failed to delete post");
     }
   };
 
@@ -47,6 +97,7 @@ export default function PostCard({ post, onUpdate }) {
   };
 
   const handleContactToReceive = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     navigate("/chat", {
       state: { userId: post.author?._id, postId: post._id },
@@ -66,7 +117,6 @@ export default function PostCard({ post, onUpdate }) {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  // Helper for Category Colors
   const getCategoryStyles = (category) => {
     const styles = {
       items:
@@ -81,17 +131,22 @@ export default function PostCard({ post, onUpdate }) {
     return styles[category] || styles["other"];
   };
 
-  const userReacted = user && post.reactions?.some((r) => r.user === user.id);
-
   return (
-    <div
-      className="w-full p-5 mb-6 transition-all duration-200 bg-white border border-transparent cursor-pointer rounded-3xl hover:border-slate-100 hover:shadow-sm"
-      onClick={() => navigate(`/posts/${post._id}`)}
+    <Link
+      to={`/posts/${post._id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block w-full p-5 mb-6 transition-all duration-200 bg-white border border-transparent cursor-pointer rounded-3xl hover:border-slate-100 hover:shadow-sm"
+      onClick={(e) => {
+        // Prevent navigation if clicking on interactive elements
+        if (e.target.closest("button") || e.target.closest('[role="button"]')) {
+          e.preventDefault();
+        }
+      }}
     >
       {/* --- HEADER --- */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          {/* Avatar */}
           <div className="w-10 h-10 overflow-hidden border rounded-full bg-slate-100 border-slate-50 shrink-0">
             {post.author?.avatar ? (
               <img
@@ -106,7 +161,6 @@ export default function PostCard({ post, onUpdate }) {
             )}
           </div>
 
-          {/* User Meta & Badges */}
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="font-bold text-gray-900 text-[15px]">
@@ -117,9 +171,7 @@ export default function PostCard({ post, onUpdate }) {
               </span>
             </div>
 
-            {/* BADGES ROW */}
             <div className="flex items-center gap-2">
-              {/* Category Badge with Dynamic Colors */}
               <Badge
                 className={`font-normal text-xs px-2.5 py-0.5 h-5 ${getCategoryStyles(
                   post.category
@@ -128,8 +180,7 @@ export default function PostCard({ post, onUpdate }) {
                 {post.category === "items" ? "Item" : post.category}
               </Badge>
 
-              {/* Status Badge - Only show if explicitly 'available' or 'donated' */}
-              {post.status === "available" && (
+              {post.category === "items" && post.status === "available" && (
                 <Badge
                   variant="outline"
                   className="font-normal text-xs px-2.5 py-0.5 h-5 text-emerald-600 border-emerald-200 bg-emerald-50"
@@ -137,7 +188,7 @@ export default function PostCard({ post, onUpdate }) {
                   Available
                 </Badge>
               )}
-              {post.status === "donated" && (
+              {post.category === "items" && post.status === "donated" && (
                 <Badge className="font-normal text-xs px-2.5 py-0.5 h-5 bg-blue-500 text-white hover:bg-blue-600 border-transparent">
                   Donated
                 </Badge>
@@ -146,10 +197,12 @@ export default function PostCard({ post, onUpdate }) {
           </div>
         </div>
 
-        {/* Top Right Actions */}
         <div className="flex items-center gap-1">
           <button
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             className="flex items-center justify-center w-8 h-8 transition-colors rounded-full bg-slate-50 hover:bg-slate-100 text-slate-500"
           >
             <Plus className="w-5 h-5" />
@@ -159,6 +212,7 @@ export default function PostCard({ post, onUpdate }) {
             <button
               className="flex items-center justify-center w-8 h-8 transition-colors rounded-full text-slate-400 hover:bg-slate-50"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 setShowReportMenu(!showReportMenu);
               }}
@@ -167,15 +221,29 @@ export default function PostCard({ post, onUpdate }) {
             </button>
             {showReportMenu && (
               <div className="absolute right-0 z-10 w-40 py-1 overflow-hidden bg-white border shadow-lg top-8 border-slate-100 rounded-xl">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleReport("spam");
-                  }}
-                  className="w-full px-4 py-2 text-xs text-left text-slate-600 hover:bg-slate-50"
-                >
-                  Report Spam
-                </button>
+                {user && post.author?._id === user.id ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleDelete();
+                    }}
+                    className="w-full px-4 py-2 text-xs text-left text-red-600 hover:bg-red-50"
+                  >
+                    Delete Post
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleReport("spam");
+                    }}
+                    className="w-full px-4 py-2 text-xs text-left text-slate-600 hover:bg-slate-50"
+                  >
+                    Report Spam
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -208,21 +276,21 @@ export default function PostCard({ post, onUpdate }) {
       {/* --- FOOTER ACTIONS --- */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex gap-3">
-          {/* Like Pill */}
+          {/* Like Pill with Animation - Using Theme Color (Cyan/Teal) */}
           <button
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              userReacted
-                ? "bg-red-50 text-red-600"
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              localIsLiked
+                ? "bg-cyan-50 text-cyan-500" // Theme match
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
+            } ${isLikeAnimating ? "scale-110" : "scale-100"}`}
             onClick={handleReaction}
           >
             <ThumbsUp
-              className={`w-4 h-4 ${userReacted ? "fill-current" : ""}`}
+              className={`w-4 h-4 transition-transform ${
+                localIsLiked ? "fill-current scale-110" : ""
+              }`}
             />
-            <span>
-              {post.reactions?.length > 0 ? post.reactions.length : "Like"}
-            </span>
+            <span>{localLikes > 0 ? localLikes : "Like"}</span>
           </button>
 
           {/* Comment Pill */}
@@ -248,10 +316,16 @@ export default function PostCard({ post, onUpdate }) {
             )}
         </div>
 
-        <button className="p-2 transition-colors rounded-full text-slate-400 hover:bg-slate-50">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className="p-2 transition-colors rounded-full text-slate-400 hover:bg-slate-50"
+        >
           <Bookmark className="w-5 h-5" />
         </button>
       </div>
-    </div>
+    </Link>
   );
 }
