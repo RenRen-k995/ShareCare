@@ -7,13 +7,16 @@ import { format } from "../../lib/utils";
 import {
   Check,
   CheckCheck,
-  Download,
-  Image as ImageIcon,
+  FileText,
   Search,
   X,
+  ArrowLeft,
+  Smile,
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 export default function ChatWindow({ chat, onBack }) {
   const [messages, setMessages] = useState([]);
@@ -22,181 +25,232 @@ export default function ChatWindow({ chat, onBack }) {
   const [hasMore, setHasMore] = useState(true);
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(null);
+
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  const { user } = useAuth();
-  const currentUserId = user?.id || user?._id;
+  const emojiPickerRef = useRef(null);
 
-  const { socket, joinChat, markMessageAsRead, onlineUsers } = useSocket();
+  const { user } = useAuth();
+  const {
+    socket,
+    joinChat,
+    markChatAsRead,
+    onlineUsers,
+    connectionStatus,
+    reconnectAttempt,
+    reactToMessage,
+  } = useSocket();
+
+  const currentUserId = user?.id || user?._id;
+  const API_URL =
+    import.meta.env.VITE_API_URL?.replace("/api", "") ||
+    "http://localhost:5000";
 
   const otherUser = chat?.participants?.find(
     (p) => p._id !== currentUserId && p.id !== currentUserId
   );
   const isOnline = otherUser && onlineUsers.has(otherUser._id || otherUser.id);
 
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const loadMessages = useCallback(
+    async (pageNum = 1, reset = false) => {
+      if (!chat?._id) return;
+      try {
+        if (reset) setLoading(true);
+        const response = await chatService.getChatMessages(chat._id, {
+          page: pageNum,
+          limit: 20,
+        });
+
+        const newMessages = response.messages || [];
+        if (reset) {
+          setMessages(newMessages.reverse());
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+        } else {
+          setMessages((prev) => [...newMessages.reverse(), ...prev]);
+        }
+
+        setHasMore(response.pagination?.page < response.pagination?.pages);
+        setPage(pageNum);
+      } catch (error) {
+        console.error("Error loading messages:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [chat?._id]
+  );
+
+  // Join Room & Load Initial Messages
   useEffect(() => {
     if (chat) {
-      loadMessages();
+      setMessages([]);
+      setPage(1);
+      setSearchResults([]);
+      setSearchQuery("");
+      setShowSearch(false);
+      loadMessages(1, true);
       joinChat(chat._id);
+      markChatAsRead(chat._id);
     }
-  }, [chat?._id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chat?._id, loadMessages]);
 
+  // Socket Event Listeners
   useEffect(() => {
     if (!socket) return;
 
-    // Listen for new messages
-    socket.on("message:receive", ({ message, chatId }) => {
+    const handleReceive = ({ message, chatId }) => {
       if (chatId === chat._id) {
         setMessages((prev) => {
-          // Avoid duplicates
-          if (prev.some((m) => m._id === message._id)) {
-            return prev;
-          }
+          if (prev.some((m) => m._id === message._id)) return prev;
           return [...prev, message];
         });
-
-        // Mark as read automatically
-        setTimeout(() => {
-          markMessageAsRead(message._id, chatId);
-        }, 500);
-
+        markChatAsRead(chatId);
         scrollToBottom();
       }
-    });
+    };
 
-    // Listen for sent message confirmation
-    socket.on("message:sent", ({ message, chatId }) => {
-      if (chatId === chat._id) {
-        setMessages((prev) => {
-          if (prev.some((m) => m._id === message._id)) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-        scrollToBottom();
-      }
-    });
-
-    // Listen for delivery confirmations
-    socket.on("message:delivered", ({ messageId, deliveredAt }) => {
+    const handleDelivered = ({ messageId, deliveredAt }) => {
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === messageId
-            ? { ...msg, isDelivered: true, deliveredAt }
-            : msg
+        prev.map((m) =>
+          m._id === messageId ? { ...m, isDelivered: true, deliveredAt } : m
         )
       );
-    });
+    };
 
-    // Listen for read receipts
-    socket.on("message:read:update", ({ messageId, readBy, readAt }) => {
+    const handleReadUpdate = ({ messageId, readBy, readAt }) => {
       setMessages((prev) =>
-        prev.map((msg) => {
-          if (msg._id === messageId) {
-            const readByArray = msg.readBy || [];
+        prev.map((m) => {
+          if (m._id === messageId) {
+            const readByArray = Array.isArray(m.readBy) ? m.readBy : [];
             if (!readByArray.some((r) => r.user === readBy)) {
               return {
-                ...msg,
+                ...m,
                 readBy: [...readByArray, { user: readBy, readAt }],
               };
             }
           }
-          return msg;
+          return m;
         })
       );
-    });
+    };
 
-    // Listen for reactions
-    socket.on("message:reaction:update", ({ messageId, reactions }) => {
-      setMessages((prev) =>
-        prev.map((msg) => (msg._id === messageId ? { ...msg, reactions } : msg))
-      );
-    });
+    const handleMessagesRead = ({ chatId }) => {
+      if (chatId === chat._id) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.sender?._id === currentUserId || m.sender === currentUserId) {
+              return m;
+            }
+            return m;
+          })
+        );
+      }
+    };
 
-    // Listen for typing indicators
-    socket.on("typing:user", ({ chatId, userId, isTyping }) => {
+    const handleTyping = ({ chatId, userId, isTyping }) => {
       if (chatId === chat._id && userId !== currentUserId) {
         setTypingUsers((prev) => {
           const newSet = new Set(prev);
-          if (isTyping) {
-            newSet.add(userId);
-          } else {
-            newSet.delete(userId);
-          }
+          isTyping ? newSet.add(userId) : newSet.delete(userId);
           return newSet;
         });
       }
-    });
+    };
 
-    // Listen for search results
-    socket.on("chat:search:results", ({ chatId, results }) => {
-      if (chatId === chat._id) {
+    const handleSearchResults = ({ results, query }) => {
+      if (query === searchQuery) {
         setSearchResults(results || []);
       }
-    });
+    };
+
+    const handleReactionUpdate = ({ messageId, reactions }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, reactions } : m))
+      );
+    };
+
+    socket.on("message:receive", handleReceive);
+    socket.on("message:sent", handleReceive);
+    socket.on("message:delivered", handleDelivered);
+    socket.on("message:read:update", handleReadUpdate);
+    socket.on("chat:messages_read", handleMessagesRead);
+    socket.on("typing:user", handleTyping);
+    socket.on("chat:search:results", handleSearchResults);
+    socket.on("message:reaction:update", handleReactionUpdate);
 
     return () => {
-      socket.off("message:receive");
-      socket.off("message:sent");
-      socket.off("message:delivered");
-      socket.off("message:read:update");
-      socket.off("message:reaction:update");
-      socket.off("typing:user");
-      socket.off("chat:search:results");
+      socket.off("message:receive", handleReceive);
+      socket.off("message:sent", handleReceive);
+      socket.off("message:delivered", handleDelivered);
+      socket.off("message:read:update", handleReadUpdate);
+      socket.off("chat:messages_read", handleMessagesRead);
+      socket.off("typing:user", handleTyping);
+      socket.off("chat:search:results", handleSearchResults);
+      socket.off("message:reaction:update", handleReactionUpdate);
     };
-  }, [socket, chat?._id, currentUserId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, chat?._id, currentUserId, searchQuery]);
 
-  const loadMessages = async (pageNum = 1) => {
-    try {
-      setLoading(true);
-      const response = await chatService.getChatMessages(chat._id, {
-        page: pageNum,
-        limit: 50,
-      });
-
-      if (pageNum === 1) {
-        setMessages(response.messages || []);
-        scrollToBottom();
-      } else {
-        setMessages((prev) => [...(response.messages || []), ...prev]);
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target)
+      ) {
+        setShowEmojiPicker(null);
       }
+    };
 
-      setHasMore(response.pagination?.page < response.pagination?.pages);
-      setPage(pageNum);
-    } catch (error) {
-      console.error("Error loading messages:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (container && container.scrollTop === 0 && hasMore && !loading) {
       const oldHeight = container.scrollHeight;
       loadMessages(page + 1).then(() => {
-        // Maintain scroll position
         container.scrollTop = container.scrollHeight - oldHeight;
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, loading, page]);
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+  const scrollToMessage = (messageId) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      messageElement.classList.add("highlight-message");
+      setTimeout(() => {
+        messageElement.classList.remove("highlight-message");
+      }, 2000);
+    }
+  };
+
+  const handleReaction = (messageId, emoji) => {
+    reactToMessage(messageId, emoji);
+    setShowEmojiPicker(null);
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (!searchQuery.trim() || !socket) return;
-
-    socket.emit("chat:search", {
-      chatId: chat._id,
-      query: searchQuery,
-    });
+    if (searchQuery.trim() && socket) {
+      socket.emit("chat:search", {
+        query: searchQuery.trim(),
+        chatId: chat._id,
+      });
+    }
   };
 
   const clearSearch = () => {
@@ -205,107 +259,175 @@ export default function ChatWindow({ chat, onBack }) {
     setShowSearch(false);
   };
 
+  const getFileUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${API_URL}${url}`;
+  };
+
   const renderMessage = (message, index) => {
     const senderId = message.sender?._id || message.sender;
     const isMine = senderId?.toString() === currentUserId?.toString();
     const showAvatar =
-      index === 0 || messages[index - 1]?.sender?._id !== message.sender?._id;
-    const isRead = message.readBy?.length > 0;
+      !isMine &&
+      (index === 0 || messages[index - 1]?.sender?._id !== message.sender?._id);
 
     return (
       <div
-        id={`msg-${message._id}`}
         key={message._id}
-        className={`flex gap-2 mb-4 ${
-          isMine ? "flex-row-reverse" : "flex-row"
-        }`}
+        id={`message-${message._id}`}
+        className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}
       >
-        {!isMine && showAvatar && (
-          <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 overflow-hidden">
-            {otherUser?.avatar ? (
-              <img
-                src={otherUser.avatar}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-sm font-semibold">
-                {(otherUser?.username || "?")[0].toUpperCase()}
-              </div>
-            )}
+        {showAvatar && (
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 overflow-hidden rounded-full bg-slate-200">
+              {otherUser?.avatar ? (
+                <img
+                  src={otherUser.avatar}
+                  className="object-cover w-full h-full"
+                  alt={otherUser?.username}
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full text-xs font-bold text-slate-500">
+                  {otherUser?.username?.[0]}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {!isMine && !showAvatar && <div className="w-8" />}
+        {!isMine && !showAvatar && <div className="w-8"></div>}
 
         <div
           className={`flex flex-col max-w-[70%] ${
             isMine ? "items-end" : "items-start"
           }`}
         >
-          <div
-            className={`rounded-lg px-4 py-2 ${
-              isMine ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"
-            }`}
-          >
-            {message.messageType === "file" && (
-              <a
-                href={message.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 hover:underline"
-              >
-                <Download size={16} />
-                <span className="text-sm">{message.fileName}</span>
-                {message.fileSize && (
-                  <span className="text-xs opacity-75">
-                    ({(message.fileSize / 1024).toFixed(1)} KB)
-                  </span>
-                )}
-              </a>
-            )}
+          <div className="relative group">
+            <div
+              className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
+                isMine
+                  ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-br-none"
+                  : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+              }`}
+            >
+              {/* Image Type */}
+              {message.messageType === "image" && (
+                <div className="max-w-xs mb-1 overflow-hidden rounded-lg max-h-80">
+                  <img
+                    src={getFileUrl(message.fileUrl)}
+                    alt="Sent image"
+                    className="object-contain w-full h-auto max-w-full cursor-pointer max-h-80 hover:opacity-90"
+                    onClick={() =>
+                      window.open(getFileUrl(message.fileUrl), "_blank")
+                    }
+                  />
+                </div>
+              )}
 
-            {message.messageType === "image" && (
-              <div>
-                <img
-                  src={message.fileUrl}
-                  alt={message.fileName}
-                  className="max-w-full rounded cursor-pointer hover:opacity-90"
-                  onClick={() => window.open(message.fileUrl, "_blank")}
-                />
-                {message.content && (
-                  <p className="mt-2 text-sm">{message.content}</p>
-                )}
+              {/* File Type */}
+              {message.messageType === "file" && (
+                <a
+                  href={getFileUrl(message.fileUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${
+                    isMine ? "bg-white/20" : "bg-gray-100 hover:bg-gray-200"
+                  }`}
+                >
+                  <div className="p-1.5 bg-white rounded-full text-emerald-500">
+                    <FileText size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">
+                      {message.fileName || "Document"}
+                    </p>
+                    <p className="text-xs opacity-80">
+                      {(message.fileSize / 1024).toFixed(0)} KB
+                    </p>
+                  </div>
+                </a>
+              )}
+
+              {/* Text Content */}
+              {message.content && (
+                <p className="leading-relaxed break-words whitespace-pre-wrap">
+                  {message.content}
+                </p>
+              )}
+            </div>
+
+            {/* Reaction Button */}
+            <button
+              onClick={() => setShowEmojiPicker(message._id)}
+              className={`absolute ${
+                isMine ? "left-2" : "right-2"
+              } -bottom-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:bg-gray-50`}
+            >
+              <Smile size={14} className="text-gray-600" />
+            </button>
+
+            {/* Emoji Picker */}
+            {showEmojiPicker === message._id && (
+              <div
+                ref={emojiPickerRef}
+                className={`absolute ${
+                  isMine ? "left-0" : "right-0"
+                } -bottom-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-1 z-10`}
+              >
+                {QUICK_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReaction(message._id, emoji)}
+                    className="hover:bg-gray-100 rounded p-1 text-lg"
+                  >
+                    {emoji}
+                  </button>
+                ))}
               </div>
             )}
 
-            {message.messageType === "text" && (
-              <p className="text-sm whitespace-pre-wrap break-words">
-                {message.content}
-              </p>
-            )}
-
+            {/* Display Reactions */}
             {message.reactions && message.reactions.length > 0 && (
               <div className="flex gap-1 mt-1 flex-wrap">
-                {message.reactions.map((reaction, idx) => (
-                  <span key={idx} className="text-xs bg-white/20 rounded px-1">
-                    {reaction.emoji}
-                  </span>
+                {Object.entries(
+                  message.reactions.reduce((acc, r) => {
+                    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                    return acc;
+                  }, {})
+                ).map(([emoji, count]) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReaction(message._id, emoji)}
+                    className="bg-gray-100 rounded-full px-2 py-0.5 text-xs flex items-center gap-1 hover:bg-gray-200"
+                  >
+                    <span>{emoji}</span>
+                    <span className="text-gray-600">{count}</span>
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+          {/* Timestamp & Status */}
+          <div className="flex items-center gap-1 mt-1 mr-1 text-[10px] text-gray-400">
             <span>{format(message.createdAt, "p")}</span>
             {isMine && (
               <>
-                {isRead ? (
-                  <CheckCheck size={14} className="text-blue-500" />
+                {message.readBy?.length > 1 ? (
+                  <CheckCheck
+                    size={12}
+                    className="text-blue-500"
+                    title="Read"
+                  />
                 ) : message.isDelivered ? (
-                  <CheckCheck size={14} />
+                  <CheckCheck
+                    size={12}
+                    className="text-gray-400"
+                    title="Delivered"
+                  />
                 ) : (
-                  <Check size={14} />
+                  <Check size={12} className="text-gray-400" title="Sent" />
                 )}
               </>
             )}
@@ -315,72 +437,96 @@ export default function ChatWindow({ chat, onBack }) {
     );
   };
 
-  if (!chat) {
+  if (!chat)
     return (
-      <div className="flex items-center justify-center h-full bg-gray-50">
-        <p className="text-gray-500">Select a chat to start messaging</p>
+      <div className="flex items-center justify-center h-full text-gray-400">
+        Select a conversation
       </div>
     );
-  }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full max-h-full bg-[#F5F7F7] overflow-hidden">
+      {/* Connection Status Banner */}
+      {connectionStatus !== "connected" && (
+        <div
+          className={`px-4 py-2 text-center text-sm font-medium ${
+            connectionStatus === "connecting"
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {connectionStatus === "connecting"
+            ? `Reconnecting${
+                reconnectAttempt > 0 ? ` (attempt ${reconnectAttempt})` : ""
+              }...`
+            : "Connection lost. Messages will be sent when reconnected."}
+        </div>
+      )}
+
       {/* Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center gap-3 mb-3">
-          <button onClick={onBack} className="lg:hidden">
-            ←
-          </button>
-
-          <div className="relative">
-            {otherUser?.avatar ? (
-              <img
-                src={otherUser.avatar}
-                alt={otherUser.fullName || otherUser.username}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                <span className="font-semibold">
-                  {(otherUser?.username || "?")[0].toUpperCase()}
-                </span>
-              </div>
-            )}
-            {isOnline && (
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
-            )}
-          </div>
-
-          <div className="flex-1">
-            <h3 className="font-semibold">
-              {otherUser?.fullName || otherUser?.username || "Unknown User"}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {isOnline ? "Online" : "Offline"}
-            </p>
-          </div>
-
+      <div className="z-10 flex items-center justify-between flex-shrink-0 px-6 py-3 bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
-            size="sm"
-            onClick={() => setShowSearch(!showSearch)}
+            size="icon"
+            className="-ml-2 lg:hidden"
+            onClick={onBack}
           >
-            <Search className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5" />
           </Button>
+          <div className="relative">
+            <div className="w-10 h-10 overflow-hidden border border-white rounded-full shadow-sm bg-slate-200">
+              {otherUser?.avatar ? (
+                <img
+                  src={otherUser.avatar}
+                  className="object-cover w-full h-full"
+                  alt={otherUser?.username}
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full font-bold text-slate-500">
+                  {otherUser?.username?.[0]}
+                </div>
+              )}
+            </div>
+            {isOnline && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+            )}
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-900">
+              {otherUser?.fullName || otherUser?.username}
+            </h3>
+            <p className="text-xs text-gray-500">
+              {typingUsers.size > 0
+                ? "Typing..."
+                : isOnline
+                ? "Active now"
+                : "Offline"}
+            </p>
+          </div>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowSearch(!showSearch)}
+        >
+          <Search className="w-5 h-5 text-gray-400" />
+        </Button>
+      </div>
 
-        {/* Search Bar */}
-        {showSearch && (
-          <form onSubmit={handleSearch} className="flex gap-2">
+      {/* Search Bar */}
+      {showSearch && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b">
+          <form onSubmit={handleSearch} className="flex-1 flex gap-2">
             <Input
               type="text"
-              placeholder="Search messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search messages..."
               className="flex-1"
             />
-            <Button type="submit" size="sm" variant="default">
-              <Search className="w-4 h-4" />
+            <Button type="submit" size="sm">
+              Search
             </Button>
             <Button
               type="button"
@@ -391,83 +537,68 @@ export default function ChatWindow({ chat, onBack }) {
               <X className="w-4 h-4" />
             </Button>
           </form>
-        )}
+        </div>
+      )}
 
-        {/* Search Results */}
-        {searchResults.length > 0 && (
-          <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm font-semibold mb-2">
-              Found {searchResults.length} result(s)
-            </p>
-            <div className="max-h-32 overflow-y-auto space-y-1">
-              {searchResults.map((msg) => (
-                <div
-                  key={msg._id}
-                  className="text-sm p-2 bg-white rounded hover:bg-gray-50 cursor-pointer"
-                  onClick={() => {
-                    // Scroll to message (simplified)
-                    const element = document.getElementById(`msg-${msg._id}`);
-                    element?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "center",
-                    });
-                  }}
-                >
-                  <span className="text-gray-600">
-                    {format(msg.createdAt, "p")}:
-                  </span>{" "}
-                  {msg.content.substring(0, 50)}
-                  {msg.content.length > 50 ? "..." : ""}
-                </div>
-              ))}
-            </div>
+      {/* Search Results */}
+      {searchResults.length > 0 && (
+        <div className="px-4 py-2 bg-yellow-50 border-b">
+          <p className="text-sm text-gray-600 mb-2">
+            Found {searchResults.length} message
+            {searchResults.length > 1 ? "s" : ""}
+          </p>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {searchResults.slice(0, 10).map((msg) => (
+              <button
+                key={msg._id}
+                onClick={() => scrollToMessage(msg._id)}
+                className="w-full text-left text-xs p-2 bg-white rounded hover:bg-gray-100"
+              >
+                <span className="font-medium">{msg.sender?.username}: </span>
+                <span className="text-gray-600">
+                  {msg.content?.substring(0, 50)}...
+                </span>
+              </button>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Messages */}
+      {/* Messages Area */}
       <div
+        className="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar"
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 bg-gray-50"
       >
-        {loading && page === 1 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        {loading && (
+          <div className="py-4 text-xs text-center text-gray-400">
+            Loading history...
           </div>
-        ) : (
-          <>
-            {hasMore && (
-              <div className="text-center mb-4">
-                <button
-                  onClick={() => loadMessages(page + 1)}
-                  className="text-sm text-blue-500 hover:underline"
-                >
-                  Load more messages
-                </button>
-              </div>
-            )}
-
-            {messages.map((message, index) => renderMessage(message, index))}
-
-            {typingUsers.size > 0 && (
-              <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
-                <div className="flex gap-1">
-                  <span className="animate-bounce">●</span>
-                  <span className="animate-bounce delay-100">●</span>
-                  <span className="animate-bounce delay-200">●</span>
-                </div>
-                <span>{otherUser?.username} is typing...</span>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </>
         )}
+
+        {/* Messages List */}
+        <div className="space-y-2">
+          {messages.map((msg, i) => renderMessage(msg, i))}
+        </div>
+
+        {/* Typing Indicator */}
+        {typingUsers.size > 0 && (
+          <div className="flex items-center gap-2 mt-2 ml-10 text-xs italic text-gray-400">
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+            </div>
+            Typing...
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <MessageInput chatId={chat._id} onMessageSent={scrollToBottom} />
+      {/* Input Area */}
+      <div className="flex-shrink-0">
+        <MessageInput chatId={chat._id} onMessageSent={scrollToBottom} />
+      </div>
     </div>
   );
 }

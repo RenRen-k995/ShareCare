@@ -1,12 +1,43 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useSocket } from "../contexts/SocketContext";
 import { Button } from "./ui/button";
 import { Heart, LogOut, User, MessageSquare } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { socket, connected, getTotalUnreadCount } = useSocket();
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (socket && connected && user) {
+      // Get initial unread count
+      getTotalUnreadCount();
+
+      // Listen for unread count updates
+      socket.on("chat:total_unread", ({ count }) => {
+        setUnreadCount(count);
+      });
+
+      socket.on("message:receive", () => {
+        // Refresh unread count when new message arrives
+        getTotalUnreadCount();
+      });
+
+      socket.on("chat:unread_cleared", () => {
+        // Refresh unread count when chat is read
+        getTotalUnreadCount();
+      });
+
+      return () => {
+        socket.off("chat:total_unread");
+        socket.off("message:receive");
+        socket.off("chat:unread_cleared");
+      };
+    }
+  }, [socket, connected, user, getTotalUnreadCount]);
 
   const handleLogout = () => {
     logout();
@@ -27,9 +58,14 @@ export default function Navbar() {
               <>
                 <span className="text-gray-700">Hello, {user.username}</span>
                 <Link to="/chat">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="relative">
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Messages
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                   </Button>
                 </Link>
                 {user.isAdmin && (

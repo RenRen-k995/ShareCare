@@ -4,10 +4,14 @@ import { useAuth } from "../../contexts/AuthContext";
 import { chatService } from "../../services/chatService";
 import { formatDistanceToNow } from "../../lib/utils";
 
-export default function ChatList({ onSelectChat, selectedChatId }) {
+export default function ChatList({
+  onSelectChat,
+  selectedChatId,
+  onChatsUpdate,
+}) {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { socket, onlineUsers } = useSocket();
+  const { socket, onlineUsers, markChatAsRead } = useSocket();
   const { user } = useAuth();
   const currentUserId = user?.id || user?._id;
 
@@ -16,24 +20,41 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
   }, []);
 
   useEffect(() => {
+    if (onChatsUpdate) {
+      onChatsUpdate(chats);
+    }
+  }, [chats, onChatsUpdate]);
+
+  useEffect(() => {
     if (!socket) return;
 
     // Listen for new messages to update last message
-    socket.on("message:receive", ({ message, chatId }) => {
+    socket.on("message:receive", ({ message, chatId, unreadCount }) => {
       setChats((prev) =>
         prev.map((chat) => {
           if (chat._id === chatId) {
+            // If the chat is currently selected, don't increment unread
+            const newUnreadCount =
+              chat._id === selectedChatId
+                ? 0
+                : unreadCount || (chat.unreadCount || 0) + 1;
             return {
               ...chat,
               lastMessage: message,
-              unreadCount:
-                chat._id === selectedChatId ? 0 : (chat.unreadCount || 0) + 1,
+              unreadCount: newUnreadCount,
               updatedAt: message.createdAt,
             };
           }
           return chat;
         })
       );
+
+      // Re-sort by updatedAt
+      setChats((prev) => {
+        return [...prev].sort(
+          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+        );
+      });
     });
 
     socket.on("chat:updated", ({ chatId, lastMessage, updatedAt }) => {
@@ -55,9 +76,19 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
       });
     });
 
+    // Listen for unread count being cleared
+    socket.on("chat:unread_cleared", ({ chatId }) => {
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat._id === chatId ? { ...chat, unreadCount: 0 } : chat
+        )
+      );
+    });
+
     return () => {
       socket.off("message:receive");
       socket.off("chat:updated");
+      socket.off("chat:unread_cleared");
     };
   }, [socket, selectedChatId]);
 
@@ -65,12 +96,29 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
     try {
       setLoading(true);
       const response = await chatService.getUserChats();
-      setChats(response.chats || []);
+      // Sort chats by most recent first
+      const sortedChats = (response.chats || []).sort(
+        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+      );
+      setChats(sortedChats);
     } catch (error) {
       console.error("Error loading chats:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChatSelect = (chat) => {
+    // Mark chat as read immediately when clicked
+    markChatAsRead(chat._id);
+
+    // Update local state
+    setChats((prev) =>
+      prev.map((c) => (c._id === chat._id ? { ...c, unreadCount: 0 } : c))
+    );
+
+    // Call parent handler
+    onSelectChat(chat);
   };
 
   const getOtherParticipant = (chat) => {
@@ -124,7 +172,7 @@ export default function ChatList({ onSelectChat, selectedChatId }) {
               return (
                 <button
                   key={chat._id}
-                  onClick={() => onSelectChat(chat)}
+                  onClick={() => handleChatSelect(chat)}
                   className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
                     isSelected ? "bg-blue-50" : ""
                   }`}

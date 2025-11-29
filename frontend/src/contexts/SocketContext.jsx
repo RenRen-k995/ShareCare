@@ -21,6 +21,9 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [connectionStatus, setConnectionStatus] = useState("disconnected"); // disconnected, connecting, connected
+  const [messageQueue, setMessageQueue] = useState([]);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -35,18 +38,53 @@ export const SocketProvider = ({ children }) => {
         auth: { token },
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 10,
+        timeout: 20000,
       }
     );
 
     newSocket.on("connect", () => {
       console.log("Socket connected");
       setConnected(true);
+      setConnectionStatus("connected");
+      setReconnectAttempt(0);
+
+      // Send queued messages
+      if (messageQueue.length > 0) {
+        messageQueue.forEach((msg) => {
+          newSocket.emit(msg.event, msg.data);
+        });
+        setMessageQueue([]);
+      }
     });
 
     newSocket.on("disconnect", () => {
       console.log("Socket disconnected");
       setConnected(false);
+      setConnectionStatus("disconnected");
+    });
+
+    newSocket.on("reconnect_attempt", (attempt) => {
+      console.log(`Reconnection attempt ${attempt}`);
+      setConnectionStatus("connecting");
+      setReconnectAttempt(attempt);
+    });
+
+    newSocket.on("reconnect", (attempt) => {
+      console.log(`Reconnected after ${attempt} attempts`);
+      setConnectionStatus("connected");
+      setReconnectAttempt(0);
+    });
+
+    newSocket.on("reconnect_error", (error) => {
+      console.error("Reconnection error:", error);
+      setConnectionStatus("disconnected");
+    });
+
+    newSocket.on("reconnect_failed", () => {
+      console.error("Reconnection failed");
+      setConnectionStatus("disconnected");
     });
 
     newSocket.on("user:online", ({ userId }) => {
@@ -70,7 +108,7 @@ export const SocketProvider = ({ children }) => {
     return () => {
       newSocket.close();
     };
-  }, []);
+  }, [messageQueue]);
 
   const joinChat = useCallback(
     (chatId) => {
@@ -85,6 +123,9 @@ export const SocketProvider = ({ children }) => {
     (data) => {
       if (socket && connected) {
         socket.emit("message:send", data);
+      } else {
+        // Queue message if offline
+        setMessageQueue((prev) => [...prev, { event: "message:send", data }]);
       }
     },
     [socket, connected]
@@ -98,6 +139,21 @@ export const SocketProvider = ({ children }) => {
     },
     [socket, connected]
   );
+
+  const markChatAsRead = useCallback(
+    (chatId) => {
+      if (socket && connected) {
+        socket.emit("chat:mark_read", { chatId });
+      }
+    },
+    [socket, connected]
+  );
+
+  const getTotalUnreadCount = useCallback(() => {
+    if (socket && connected) {
+      socket.emit("chat:get_unread_count");
+    }
+  }, [socket, connected]);
 
   const sendTypingStart = useCallback(
     (chatId) => {
@@ -138,10 +194,14 @@ export const SocketProvider = ({ children }) => {
   const value = {
     socket,
     connected,
+    connectionStatus,
+    reconnectAttempt,
     onlineUsers,
     joinChat,
     sendMessage,
     markMessageAsRead,
+    markChatAsRead,
+    getTotalUnreadCount,
     sendTypingStart,
     sendTypingStop,
     reactToMessage,

@@ -8,7 +8,7 @@ class ChatRepository {
 
   async findChatByParticipants(userId1, userId2) {
     return await Chat.findOne({
-      participants: { $all: [userId1, userId2] },
+      participants: { $all: [userId1, userId2], $size: 2 },
     }).populate("participants", "username fullName avatar");
   }
 

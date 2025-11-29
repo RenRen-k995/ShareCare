@@ -48,7 +48,7 @@ export default function Home() {
 
   return (
     <MainLayout>
-      <div className="px-8 py-6">
+      <div className="py-5">
         {/* Create Post Widget */}
         {user && <CreatePostWidget />}
 
@@ -76,7 +76,7 @@ export default function Home() {
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {posts.map((post) => (
               <PostCard
                 key={post._id}

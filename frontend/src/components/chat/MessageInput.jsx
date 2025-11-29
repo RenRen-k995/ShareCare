@@ -1,80 +1,72 @@
 import { useState, useRef, useEffect } from "react";
 import { useSocket } from "../../contexts/SocketContext";
-import { Paperclip, Send, Smile, X, Image as ImageIcon } from "lucide-react";
+import {
+  Plus,
+  Send,
+  Smile,
+  X,
+  Image as ImageIcon,
+  Loader2,
+  Paperclip,
+} from "lucide-react";
+import { Button } from "../ui/button";
 
-const EMOJI_LIST = ["👍", "❤️", "😊", "😂", "🎉", "👏", "🔥", "✨"];
+const EMOJI_LIST = ["👍", "❤️", "😊", "😂", "🎉", "👏", "🔥", "✨", "😭", "👀"];
 
 export default function MessageInput({ chatId, onMessageSent }) {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+
   const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const textareaRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
   const { sendMessage, sendTypingStart, sendTypingStop } = useSocket();
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+  // Auto-resize textarea with max height
   useEffect(() => {
-    // Auto-resize textarea
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + "px";
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 120); // Max 120px
+      textareaRef.current.style.height = newHeight + "px";
     }
   }, [message]);
 
-  const handleTyping = () => {
+  // Xử lý Typing Indicator
+  const handleTyping = (e) => {
+    setMessage(e.target.value);
     sendTypingStart(chatId);
 
-    // Clear existing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
-    // Stop typing indicator after 2 seconds of no typing
+    // Stop typing sau 2s không gõ
     typingTimeoutRef.current = setTimeout(() => {
       sendTypingStop(chatId);
     }, 2000);
   };
 
+  // Xử lý chọn file
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB");
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      alert(
-        "File type not allowed. Please upload images or PDF/DOC files only."
-      );
+      alert("File quá lớn! Vui lòng chọn file dưới 10MB.");
       return;
     }
 
     setSelectedFile(file);
 
-    // Create preview for images
+    // Tạo preview local (chỉ để người gửi xem trước khi gửi)
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFilePreview(reader.result);
-      };
+      reader.onloadend = () => setFilePreview(reader.result);
       reader.readAsDataURL(file);
     } else {
       setFilePreview(null);
@@ -84,77 +76,62 @@ export default function MessageInput({ chatId, onMessageSent }) {
   const removeFile = () => {
     setSelectedFile(null);
     setFilePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const uploadFile = async (file) => {
+  // Upload file lên Server (Quan trọng: Để người khác thấy được)
+  const uploadFileToServer = async (file) => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", file); // Tên field phải khớp với multer ở backend
 
-    try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:5000"
-        }/api/chat/upload`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: formData,
-        }
-      );
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${API_URL}/api/chat/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
 
-      if (!response.ok) throw new Error("Upload failed");
-
-      const data = await response.json();
-      return data.fileUrl;
-    } catch (error) {
-      console.error("File upload error:", error);
-      throw error;
-    }
+    if (!res.ok) throw new Error("Upload failed");
+    return await res.json(); // Trả về { fileUrl: "/uploads/...", ... }
   };
 
   const handleSend = async () => {
     if (!message.trim() && !selectedFile) return;
 
+    setUploading(true);
     sendTypingStop(chatId);
 
     try {
-      setUploading(true);
-
-      let fileUrl = null;
-      let messageType = "text";
-      let fileName = null;
-      let fileSize = null;
-
-      // Upload file if present
-      if (selectedFile) {
-        fileUrl = await uploadFile(selectedFile);
-        messageType = selectedFile.type.startsWith("image/") ? "image" : "file";
-        fileName = selectedFile.name;
-        fileSize = selectedFile.size;
-      }
-
-      // Send message via Socket.IO
-      sendMessage({
+      let messageData = {
         chatId,
         content: message.trim(),
-        messageType,
-        fileUrl,
-        fileName,
-        fileSize,
-      });
+        messageType: "text",
+      };
 
-      // Reset form
+      // Nếu có file, upload trước
+      if (selectedFile) {
+        const uploadData = await uploadFileToServer(selectedFile);
+
+        messageData.messageType = selectedFile.type.startsWith("image/")
+          ? "image"
+          : "file";
+        messageData.fileUrl = uploadData.fileUrl; // Đường dẫn tương đối từ server
+        messageData.fileName = selectedFile.name;
+        messageData.fileSize = selectedFile.size;
+      }
+
+      // Gửi thông tin qua Socket (đã bao gồm URL từ server)
+      sendMessage(messageData);
+
+      // Reset
       setMessage("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
       removeFile();
+      setShowEmojiPicker(false);
       onMessageSent?.();
     } catch (error) {
-      console.error("Error sending message:", error);
-      alert("Failed to send message. Please try again.");
+      console.error("Send error:", error);
+      alert("Gửi tin nhắn thất bại.");
     } finally {
       setUploading(false);
     }
@@ -167,52 +144,47 @@ export default function MessageInput({ chatId, onMessageSent }) {
     }
   };
 
-  const insertEmoji = (emoji) => {
-    setMessage((prev) => prev + emoji);
-    setShowEmojiPicker(false);
-    textareaRef.current?.focus();
-  };
-
   return (
-    <div className="border-t p-4 bg-white">
-      {/* File Preview */}
+    <div className="flex flex-col p-3 bg-white border-t">
+      {/* File Preview Area */}
       {selectedFile && (
-        <div className="mb-3 flex items-center gap-2 p-2 bg-gray-100 rounded">
+        <div className="flex items-center gap-3 p-2 mb-2 border bg-slate-50 rounded-xl border-slate-100">
           {filePreview ? (
             <img
               src={filePreview}
               alt="Preview"
-              className="w-16 h-16 object-cover rounded"
+              className="object-cover w-12 h-12 border rounded-lg"
             />
           ) : (
-            <div className="w-16 h-16 bg-gray-300 rounded flex items-center justify-center">
-              <Paperclip size={24} />
+            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-slate-200">
+              <Paperclip className="w-5 h-5 text-slate-500" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-            <p className="text-xs text-gray-500">
+            <p className="text-sm font-medium truncate text-slate-700">
+              {selectedFile.name}
+            </p>
+            <p className="text-xs text-slate-400">
               {(selectedFile.size / 1024).toFixed(1)} KB
             </p>
           </div>
           <button
             onClick={removeFile}
-            className="p-1 hover:bg-gray-200 rounded"
-            disabled={uploading}
+            className="p-1 rounded-full hover:bg-slate-200"
           >
-            <X size={20} />
+            <X className="w-4 h-4 text-slate-500" />
           </button>
         </div>
       )}
 
-      {/* Emoji Picker */}
+      {/* Emoji Bar */}
       {showEmojiPicker && (
-        <div className="mb-2 flex gap-2 p-2 bg-gray-50 rounded">
-          {EMOJI_LIST.map((emoji, index) => (
+        <div className="flex gap-2 p-2 mb-2 overflow-x-auto bg-slate-50 rounded-xl no-scrollbar">
+          {EMOJI_LIST.map((emoji) => (
             <button
-              key={index}
-              onClick={() => insertEmoji(emoji)}
-              className="text-2xl hover:scale-110 transition-transform"
+              key={emoji}
+              onClick={() => setMessage((prev) => prev + emoji)}
+              className="px-1 text-xl transition-transform hover:scale-125"
             >
               {emoji}
             </button>
@@ -220,68 +192,110 @@ export default function MessageInput({ chatId, onMessageSent }) {
         </div>
       )}
 
-      {/* Input Area */}
+      {/* Main Input Row - Messenger Style */}
       <div className="flex items-end gap-2">
-        {/* File Upload */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          onChange={handleFileSelect}
-          className="hidden"
-          accept="image/*,.pdf,.doc,.docx"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          disabled={uploading}
-          title="Attach file"
-        >
-          <Paperclip size={20} className="text-gray-600" />
-        </button>
+        {/* Plus Button with Popup Menu */}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`rounded-full flex-shrink-0 ${
+              showAttachMenu
+                ? "text-emerald-500 bg-emerald-50"
+                : "text-slate-400 hover:text-emerald-500 hover:bg-emerald-50"
+            }`}
+            onClick={() => setShowAttachMenu(!showAttachMenu)}
+            disabled={uploading}
+          >
+            <Plus className="w-5 h-5" />
+          </Button>
 
-        {/* Emoji Button */}
-        <button
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          disabled={uploading}
-          title="Add emoji"
-        >
-          <Smile size={20} className="text-gray-600" />
-        </button>
+          {/* Attachment Menu Popup */}
+          {showAttachMenu && (
+            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-100 p-2 min-w-[160px]">
+              <input
+                ref={imageInputRef}
+                type="file"
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="image/*"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileSelect}
+                className="hidden"
+                accept=".pdf,.doc,.docx,.txt"
+              />
+              <button
+                onClick={() => {
+                  imageInputRef.current?.click();
+                  setShowAttachMenu(false);
+                }}
+                className="flex items-center w-full gap-3 px-3 py-2 text-sm text-left transition-colors rounded-lg hover:bg-slate-50"
+              >
+                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
+                  <ImageIcon className="w-4 h-4 text-blue-600" />
+                </div>
+                <span className="font-medium text-slate-700">Image</span>
+              </button>
+              <button
+                onClick={() => {
+                  fileInputRef.current?.click();
+                  setShowAttachMenu(false);
+                }}
+                className="flex items-center w-full gap-3 px-3 py-2 text-sm text-left transition-colors rounded-lg hover:bg-slate-50"
+              >
+                <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-full">
+                  <Paperclip className="w-4 h-4 text-purple-600" />
+                </div>
+                <span className="font-medium text-slate-700">File</span>
+              </button>
+            </div>
+          )}
+        </div>
 
-        {/* Text Input */}
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={(e) => {
-            setMessage(e.target.value);
-            handleTyping();
-          }}
-          onKeyPress={handleKeyPress}
-          placeholder="Type a message..."
-          className="flex-1 resize-none border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 max-h-32"
-          rows={1}
-          disabled={uploading}
-        />
+        {/* Text Input with Inside Buttons */}
+        <div className="flex-1 relative flex items-end bg-slate-50 rounded-[1.2rem] px-3 py-2 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-100 transition-all">
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={handleTyping}
+            onKeyDown={handleKeyPress}
+            placeholder="Aa"
+            className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-gray-700 placeholder:text-gray-400 max-h-[120px] py-1 pr-2"
+            rows={1}
+            disabled={uploading}
+            style={{ minHeight: "24px" }}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`flex-shrink-0 h-6 w-6 rounded-full ${
+              showEmojiPicker
+                ? "text-yellow-500 bg-yellow-50"
+                : "text-slate-400 hover:text-yellow-500 hover:bg-transparent"
+            }`}
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            disabled={uploading}
+          >
+            <Smile className="w-4 h-4" />
+          </Button>
+        </div>
 
         {/* Send Button */}
-        <button
+        <Button
           onClick={handleSend}
           disabled={(!message.trim() && !selectedFile) || uploading}
-          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          title="Send message"
+          className="flex-shrink-0 w-10 h-10 text-white rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 disabled:opacity-50"
         >
           {uploading ? (
-            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+            <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Send size={20} />
+            <Send className="w-10 h-10" />
           )}
-        </button>
+        </Button>
       </div>
-
-      <p className="text-xs text-gray-500 mt-2">
-        Press Enter to send, Shift+Enter for new line
-      </p>
     </div>
   );
 }

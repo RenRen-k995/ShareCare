@@ -1,22 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { Badge } from "./ui/badge";
 import {
   ThumbsUp,
   MessageSquare,
   MoreHorizontal,
-  Send,
   Bookmark,
   Plus,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
 import reportService from "../services/reportService";
-import { extractTextFromHtml } from "../utils/htmlUtils";
+import {
+  extractTextFromHtml,
+  extractFirstLineFromHtml,
+} from "../utils/htmlUtils";
 
 export default function PostCard({ post, onUpdate, onDelete }) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const [showReportMenu, setShowReportMenu] = useState(false);
@@ -27,12 +28,6 @@ export default function PostCard({ post, onUpdate, onDelete }) {
   const [localIsLiked, setLocalIsLiked] = useState(
     user && post.reactions?.some((r) => r.user === user.id)
   );
-
-  // Sync state if props change (e.g. from a hard refresh)
-  useEffect(() => {
-    setLocalLikes(post.reactions?.length || 0);
-    setLocalIsLiked(user && post.reactions?.some((r) => r.user === user.id));
-  }, [post.reactions, user]);
 
   const handleReaction = async (e) => {
     e.preventDefault();
@@ -55,8 +50,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
       // 3. API Call in background
       await postService.toggleReaction(post._id);
       // We do NOT call onUpdate() here to avoid page reload/flicker
-    } catch (error) {
-      console.error("Failed to toggle reaction:", error);
+    } catch {
       // Revert on error
       setLocalIsLiked(previousIsLiked);
       setLocalLikes(previousLikes);
@@ -76,7 +70,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
       } else if (onUpdate) {
         onUpdate();
       }
-    } catch (error) {
+    } catch {
       alert("Failed to delete post");
     }
   };
@@ -91,17 +85,9 @@ export default function PostCard({ post, onUpdate, onDelete }) {
       });
       alert("Report submitted successfully");
       setShowReportMenu(false);
-    } catch (error) {
+    } catch {
       alert("Failed to submit report");
     }
-  };
-
-  const handleContactToReceive = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    navigate("/chat", {
-      state: { userId: post.author?._id, postId: post._id },
-    });
   };
 
   const formatTime = (dateString) => {
@@ -252,7 +238,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
 
       {/* --- IMAGE CONTENT --- */}
       {post.image && (
-        <div className="w-full mb-3 overflow-hidden border rounded-2xl border-slate-100">
+        <div className="w-9/12 mb-3 overflow-hidden border rounded-2xl border-slate-100">
           <img
             src={`${API_URL}${post.image}`}
             alt={post.title}
@@ -262,14 +248,14 @@ export default function PostCard({ post, onUpdate, onDelete }) {
       )}
 
       {/* --- TITLE --- */}
-      <div className="px-1 mb-2 font-semibold text-gray-900 text-[17px]">
+      <div className="px-1 mb-1 text-gray-900 text-[17px]">
         <p>{extractTextFromHtml(post.title, 100)}</p>
       </div>
 
       {/* --- TEXT CONTENT --- */}
       <div className="px-1 mb-4">
-        <p className="text-gray-400 text-[15px] leading-relaxed whitespace-pre-wrap">
-          {extractTextFromHtml(post.description, 300)}
+        <p className="text-gray-400 text-[15px] leading-relaxed truncate">
+          {extractFirstLineFromHtml(post.description, 120)}
         </p>
       </div>
 
@@ -300,20 +286,6 @@ export default function PostCard({ post, onUpdate, onDelete }) {
               {post.comments?.length > 0 ? post.comments.length : "Comments"}
             </span>
           </button>
-
-          {/* Contact Button */}
-          {post.category === "items" &&
-            post.status === "available" &&
-            user &&
-            post.author?._id !== user.id && (
-              <button
-                onClick={handleContactToReceive}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors bg-black rounded-full shadow-sm hover:bg-gray-800"
-              >
-                <Send className="w-3 h-3" />
-                <span>Contact</span>
-              </button>
-            )}
         </div>
 
         <button
