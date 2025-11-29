@@ -12,6 +12,7 @@ import commentRoutes from "./routes/commentRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import exchangeRoutes from "./routes/exchangeRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 // ES module __dirname equivalent
@@ -40,6 +41,7 @@ app.use("/api/comments", commentRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/exchanges", exchangeRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

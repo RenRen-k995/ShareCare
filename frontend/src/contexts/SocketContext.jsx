@@ -191,6 +191,15 @@ export const SocketProvider = ({ children }) => {
     [socket, connected]
   );
 
+  const updateExchangeStatus = useCallback(
+    (exchangeId, status, note) => {
+      if (socket && connected) {
+        socket.emit("exchange:update", { exchangeId, status, note });
+      }
+    },
+    [socket, connected]
+  );
+
   const value = {
     socket,
     connected,
@@ -206,6 +215,7 @@ export const SocketProvider = ({ children }) => {
     sendTypingStop,
     reactToMessage,
     searchChat,
+    updateExchangeStatus,
   };
 
   return (

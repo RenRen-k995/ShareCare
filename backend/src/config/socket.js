@@ -380,6 +380,44 @@ export const initializeSocket = (httpServer) => {
       }
     });
 
+    // Handle exchange status updates
+    socket.on("exchange:update", async ({ exchangeId, status, note }) => {
+      try {
+        const Exchange = (await import("../models/Exchange.js")).default;
+        const exchange = await Exchange.findById(exchangeId).populate(
+          "giver receiver",
+          "username fullName avatar"
+        );
+
+        if (!exchange) {
+          socket.emit("error", { message: "Exchange not found" });
+          return;
+        }
+
+        // Verify user is participant
+        if (
+          exchange.giver._id.toString() !== socket.userId &&
+          exchange.receiver._id.toString() !== socket.userId
+        ) {
+          socket.emit("error", { message: "Unauthorized" });
+          return;
+        }
+
+        // Emit to both participants
+        const chatId = exchange.chat.toString();
+        io.to(`chat:${chatId}`).emit("exchange:status_changed", {
+          exchangeId,
+          status,
+          updatedBy: socket.userId,
+          note,
+          timestamp: new Date(),
+        });
+      } catch (error) {
+        console.error("Exchange update error:", error);
+        socket.emit("error", { message: error.message });
+      }
+    });
+
     // Handle disconnection
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.userId}`);

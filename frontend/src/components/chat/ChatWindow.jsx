@@ -2,7 +2,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSocket } from "../../contexts/SocketContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { chatService } from "../../services/chatService";
+import exchangeService from "../../services/exchangeService";
 import MessageInput from "./MessageInput";
+import ExchangeWidget from "./ExchangeWidget";
+import ExchangeRequestModal from "./ExchangeRequestModal";
+import MeetingScheduler from "./MeetingScheduler";
+import RatingModal from "./RatingModal";
 import { format } from "../../lib/utils";
 import {
   Check,
@@ -28,6 +33,10 @@ export default function ChatWindow({ chat, onBack }) {
   const [showSearch, setShowSearch] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(null);
+  const [exchange, setExchange] = useState(null);
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -53,6 +62,36 @@ export default function ChatWindow({ chat, onBack }) {
     (p) => p._id !== currentUserId && p.id !== currentUserId
   );
   const isOnline = otherUser && onlineUsers.has(otherUser._id || otherUser.id);
+
+  // Check if current user is the post owner (offering) or not (requesting)
+  const isPostOwner =
+    chat?.post?.creator?._id === currentUserId ||
+    chat?.post?.creator === currentUserId;
+
+  const handleCreateExchangeRequest = async (message) => {
+    try {
+      const data = await exchangeService.createExchange(
+        chat._id,
+        chat.post._id
+      );
+      setExchange(data.exchange);
+      socket?.emit("exchange:update", {
+        exchangeId: data.exchange._id,
+        status: "requested",
+      });
+
+      // Optionally send the message to chat
+      if (message && message.trim()) {
+        socket?.emit("send_message", {
+          chatId: chat._id,
+          content: message,
+        });
+      }
+    } catch (error) {
+      console.error("Error creating exchange request:", error);
+      throw error;
+    }
+  };
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -303,7 +342,7 @@ export default function ChatWindow({ chat, onBack }) {
             isMine ? "items-end" : "items-start"
           }`}
         >
-          <div className="relative group">
+          <div className="relative group overflow-visible">
             <div
               className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
                 isMine
@@ -599,6 +638,52 @@ export default function ChatWindow({ chat, onBack }) {
       <div className="flex-shrink-0">
         <MessageInput chatId={chat._id} onMessageSent={scrollToBottom} />
       </div>
+
+      {/* Exchange Widget - Show if chat has associated post */}
+      {chat.post && (
+        <div className="border-t bg-gray-50 p-3">
+          <ExchangeWidget
+            chatId={chat._id}
+            post={chat.post}
+            onSchedule={() => setShowScheduler(true)}
+            onRate={() => setShowRating(true)}
+            onExchangeUpdate={(updatedExchange) => setExchange(updatedExchange)}
+            onRequestExchange={() => setShowRequestModal(true)}
+          />
+        </div>
+      )}
+
+      {/* Modals */}
+      {showRequestModal && chat.post && (
+        <ExchangeRequestModal
+          post={chat.post}
+          isOffer={isPostOwner}
+          onClose={() => setShowRequestModal(false)}
+          onConfirm={handleCreateExchangeRequest}
+        />
+      )}
+
+      {showScheduler && exchange && (
+        <MeetingScheduler
+          exchange={exchange}
+          onClose={() => setShowScheduler(false)}
+          onScheduled={() => {
+            setShowScheduler(false);
+            // Reload exchange widget
+          }}
+        />
+      )}
+
+      {showRating && exchange && (
+        <RatingModal
+          exchange={exchange}
+          onClose={() => setShowRating(false)}
+          onRated={() => {
+            setShowRating(false);
+            // Reload exchange widget
+          }}
+        />
+      )}
     </div>
   );
 }
