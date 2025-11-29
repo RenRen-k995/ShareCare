@@ -128,6 +128,21 @@ export default function ChatWindow({ chat, onBack }) {
     [chat?._id]
   );
 
+  // Load Exchange Data when Chat opens
+  useEffect(() => {
+    const loadExchangeData = async () => {
+      if (chat?._id) {
+        try {
+          const data = await exchangeService.getExchangeByChat(chat._id);
+          setExchange(data.exchange);
+        } catch (err) {
+          console.error("Failed to load exchange", err);
+        }
+      }
+    };
+    loadExchangeData();
+  }, [chat?._id]);
+
   // Join Room & Load Initial Messages
   useEffect(() => {
     if (chat) {
@@ -342,7 +357,7 @@ export default function ChatWindow({ chat, onBack }) {
             isMine ? "items-end" : "items-start"
           }`}
         >
-          <div className="relative group overflow-visible">
+          <div className="relative overflow-visible group">
             <div
               className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
                 isMine
@@ -418,7 +433,7 @@ export default function ChatWindow({ chat, onBack }) {
                   <button
                     key={emoji}
                     onClick={() => handleReaction(message._id, emoji)}
-                    className="hover:bg-gray-100 rounded p-1 text-lg"
+                    className="p-1 text-lg rounded hover:bg-gray-100"
                   >
                     {emoji}
                   </button>
@@ -428,7 +443,7 @@ export default function ChatWindow({ chat, onBack }) {
 
             {/* Display Reactions */}
             {message.reactions && message.reactions.length > 0 && (
-              <div className="flex gap-1 mt-1 flex-wrap">
+              <div className="flex flex-wrap gap-1 mt-1">
                 {Object.entries(
                   message.reactions.reduce((acc, r) => {
                     acc[r.emoji] = (acc[r.emoji] || 0) + 1;
@@ -555,8 +570,8 @@ export default function ChatWindow({ chat, onBack }) {
 
       {/* Search Bar */}
       {showSearch && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b">
-          <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+        <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50">
+          <form onSubmit={handleSearch} className="flex flex-1 gap-2">
             <Input
               type="text"
               value={searchQuery}
@@ -581,17 +596,17 @@ export default function ChatWindow({ chat, onBack }) {
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="px-4 py-2 bg-yellow-50 border-b">
-          <p className="text-sm text-gray-600 mb-2">
+        <div className="px-4 py-2 border-b bg-yellow-50">
+          <p className="mb-2 text-sm text-gray-600">
             Found {searchResults.length} message
             {searchResults.length > 1 ? "s" : ""}
           </p>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
+          <div className="space-y-1 overflow-y-auto max-h-32">
             {searchResults.slice(0, 10).map((msg) => (
               <button
                 key={msg._id}
                 onClick={() => scrollToMessage(msg._id)}
-                className="w-full text-left text-xs p-2 bg-white rounded hover:bg-gray-100"
+                className="w-full p-2 text-xs text-left bg-white rounded hover:bg-gray-100"
               >
                 <span className="font-medium">{msg.sender?.username}: </span>
                 <span className="text-gray-600">
@@ -609,6 +624,21 @@ export default function ChatWindow({ chat, onBack }) {
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
+        {/* Only show if this chat is related to a post */}
+        {chat?.post && (
+          <div className="mb-4">
+            <ExchangeWidget
+              chatId={chat._id}
+              post={chat.post} // Ensure chat object from backend populates 'post'
+              exchange={exchange}
+              onExchangeUpdate={setExchange}
+              onSchedule={() => setShowScheduler(true)}
+              onRate={() => setShowRating(true)}
+              onRequestExchange={() => setShowRequestModal(true)}
+            />
+          </div>
+        )}
+
         {loading && (
           <div className="py-4 text-xs text-center text-gray-400">
             Loading history...
@@ -638,20 +668,6 @@ export default function ChatWindow({ chat, onBack }) {
       <div className="flex-shrink-0">
         <MessageInput chatId={chat._id} onMessageSent={scrollToBottom} />
       </div>
-
-      {/* Exchange Widget - Show if chat has associated post */}
-      {chat.post && (
-        <div className="border-t bg-gray-50 p-3">
-          <ExchangeWidget
-            chatId={chat._id}
-            post={chat.post}
-            onSchedule={() => setShowScheduler(true)}
-            onRate={() => setShowRating(true)}
-            onExchangeUpdate={(updatedExchange) => setExchange(updatedExchange)}
-            onRequestExchange={() => setShowRequestModal(true)}
-          />
-        </div>
-      )}
 
       {/* Modals */}
       {showRequestModal && chat.post && (

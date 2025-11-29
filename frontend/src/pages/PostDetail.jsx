@@ -3,8 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
 import commentService from "../services/commentService";
+import chatService from "../services/chatService";
+import exchangeService from "../services/exchangeService";
 import CreatorProfile from "../components/CreatorProfile";
 import MainLayout from "../components/layout/MainLayout";
+import ExchangeRequestModal from "../components/chat/ExchangeRequestModal";
 import {
   ThumbsUp,
   MessageSquare,
@@ -28,6 +31,7 @@ export default function PostDetail() {
   const [loading, setLoading] = useState(true);
   const [sortMethod, setSortMethod] = useState("newest");
   const [activeCommentMenu, setActiveCommentMenu] = useState(null); // Track open menu
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   // Refs for sticky footer logic
   const commentInputRef = useRef(null);
@@ -169,9 +173,36 @@ export default function PostDetail() {
 
   const handleContactToReceive = () => {
     if (!user) return;
-    navigate("/chat", {
-      state: { userId: post.author?._id, postId: post._id },
-    });
+    setShowRequestModal(true);
+  };
+
+  const handleExchangeRequest = async (message) => {
+    try {
+      // 1. Get or Create Chat Room
+      const chatData = await chatService.getOrCreateChat(
+        post.author._id,
+        post._id
+      );
+      const chatId = chatData.chat._id;
+
+      // 2. Create Exchange Request
+      await exchangeService.createExchange(chatId, post._id);
+
+      // 3. Send the optional message if provided
+      if (message && message.trim()) {
+        await chatService.sendMessage(chatId, message);
+      }
+
+      // 4. Navigate to Chat
+      navigate("/chat", {
+        state: { userId: post.author._id, postId: post._id },
+      });
+    } catch (error) {
+      console.error("Failed to create exchange request:", error);
+      alert("Failed to send request. Please try again.");
+    } finally {
+      setShowRequestModal(false);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -539,6 +570,16 @@ export default function PostDetail() {
           </div>
         </div>
       </div>
+
+      {/* Exchange Request Modal */}
+      {showRequestModal && post && (
+        <ExchangeRequestModal
+          post={post}
+          isOffer={false}
+          onClose={() => setShowRequestModal(false)}
+          onConfirm={handleExchangeRequest}
+        />
+      )}
     </MainLayout>
   );
 }
