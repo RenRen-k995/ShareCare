@@ -1,6 +1,7 @@
 import React from "react";
 import { Plus, Check } from "lucide-react";
 import { Button } from "./ui/button";
+import { Avatar } from "./common";
 
 export default function CreatorProfile({ author }) {
   if (!author) return null;
@@ -14,18 +15,12 @@ export default function CreatorProfile({ author }) {
 
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 overflow-hidden bg-yellow-100 border-2 border-white rounded-full shadow-sm">
-              {author.avatar ? (
-                <img
-                  src={author.avatar}
-                  alt={author.username}
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                // Using a playful icon placeholder like the reference
-                <span className="text-2xl">🐰</span>
-              )}
-            </div>
+            <Avatar
+              src={author.avatar}
+              alt={author.username}
+              fallback={author.username}
+              size="lg"
+            />
             <div>
               <h4 className="text-base font-bold text-gray-900">
                 {author.fullName || author.username}
