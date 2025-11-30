@@ -43,10 +43,11 @@ class ChatController {
           .json({ message: "Chat ID and content are required" });
       }
 
+      // Pass content as an object with content property
       const message = await ChatService.sendMessage(
         chatId,
         req.user.id,
-        content
+        { content } // <- Fixed: wrap content in object
       );
 
       res.status(201).json({

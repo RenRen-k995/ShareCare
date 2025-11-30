@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { TrendingUp, Users, Package, Award } from "lucide-react";
 
 export default function RightSidebar() {
   // Mock data - in a real app, this would come from an API
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     activeDonors: 89,
     itemsShared: 120,
     weeklyGrowth: "+15%",
   });
 
   return (
-    <aside className="flex-shrink-0 py-6 pr-6 space-y-6 overflow-y-auto w-80">
+    <aside className="flex-shrink-0 py-5 pr-6 space-y-6 overflow-y-auto w-96">
       {/* Community Stats */}
       <div className="p-6 bg-white shadow-sm rounded-2xl">
         <div className="flex items-center mb-4 space-x-2">

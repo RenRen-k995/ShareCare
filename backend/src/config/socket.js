@@ -126,10 +126,15 @@ export const initializeSocket = (httpServer) => {
 
         await chat.save();
 
-        // Check if recipient is online
+        // Get the recipient user object for unread count notification
         const recipientId = chat.participants
           .find((id) => id.toString() !== socket.userId)
           .toString();
+
+        // Populate the full chat to send unread count
+        await chat.populate("participants", "username fullName avatar");
+
+        // Check if recipient is online
         const recipientSocketId = connectedUsers.get(recipientId);
 
         if (recipientSocketId) {
@@ -138,8 +143,15 @@ export const initializeSocket = (httpServer) => {
           message.deliveredAt = new Date();
           await message.save();
 
-          // Emit to recipient
-          io.to(`chat:${chatId}`).emit("message:receive", {
+          // Emit to recipient with unread count
+          io.to(recipientSocketId).emit("message:receive", {
+            message: message.toObject(),
+            chatId,
+            unreadCount: chat.unreadCount.get(recipientId) || 0,
+          });
+
+          // Send to sender so they see their own message immediately
+          socket.emit("message:sent", {
             message: message.toObject(),
             chatId,
           });
@@ -249,6 +261,62 @@ export const initializeSocket = (httpServer) => {
       }
     });
 
+    // Handle marking chat as read when user opens it
+    socket.on("chat:mark_read", async ({ chatId }) => {
+      try {
+        const chat = await Chat.findById(chatId);
+        if (!chat || !chat.participants.includes(socket.userId)) {
+          return;
+        }
+
+        // Mark all unread messages as read
+        await Message.updateMany(
+          {
+            chat: chatId,
+            sender: { $ne: socket.userId },
+            "readBy.user": { $ne: socket.userId },
+          },
+          {
+            $push: { readBy: { user: socket.userId, readAt: new Date() } },
+          }
+        );
+
+        // Reset unread count
+        const oldCount = chat.unreadCount.get(socket.userId.toString()) || 0;
+        chat.unreadCount.set(socket.userId.toString(), 0);
+        await chat.save();
+
+        // Notify the user that unread count is cleared
+        socket.emit("chat:unread_cleared", { chatId, oldCount });
+
+        // Notify other participants that messages were read
+        socket.to(`chat:${chatId}`).emit("chat:messages_read", {
+          chatId,
+          userId: socket.userId,
+          readAt: new Date(),
+        });
+      } catch (error) {
+        console.error("Chat mark read error:", error);
+      }
+    });
+
+    // Get total unread count for user
+    socket.on("chat:get_unread_count", async () => {
+      try {
+        const chats = await Chat.find({ participants: socket.userId });
+        let totalUnread = 0;
+
+        chats.forEach((chat) => {
+          const count = chat.unreadCount.get(socket.userId.toString()) || 0;
+          totalUnread += count;
+        });
+
+        socket.emit("chat:total_unread", { count: totalUnread });
+      } catch (error) {
+        console.error("Get unread count error:", error);
+      }
+    });
+
     // Handle message reactions
     socket.on("message:react", async ({ messageId, emoji }) => {
       try {
@@ -314,6 +382,44 @@ export const initializeSocket = (httpServer) => {
         });
       } catch (error) {
         console.error("Chat search error:", error);
+        socket.emit("error", { message: error.message });
+      }
+    });
+
+    // Handle exchange status updates
+    socket.on("exchange:update", async ({ exchangeId, status, note }) => {
+      try {
+        const Exchange = (await import("../models/Exchange.js")).default;
+        const exchange = await Exchange.findById(exchangeId).populate(
+          "giver receiver",
+          "username fullName avatar"
+        );
+
+        if (!exchange) {
+          socket.emit("error", { message: "Exchange not found" });
+          return;
+        }
+
+        // Verify user is participant
+        if (
+          exchange.giver._id.toString() !== socket.userId &&
+          exchange.receiver._id.toString() !== socket.userId
+        ) {
+          socket.emit("error", { message: "Unauthorized" });
+          return;
+        }
+
+        // Emit to both participants
+        const chatId = exchange.chat.toString();
+        io.to(`chat:${chatId}`).emit("exchange:status_changed", {
+          exchangeId,
+          status,
+          updatedBy: socket.userId,
+          note,
+          timestamp: new Date(),
+        });
+      } catch (error) {
+        console.error("Exchange update error:", error);
         socket.emit("error", { message: error.message });
       }
     });

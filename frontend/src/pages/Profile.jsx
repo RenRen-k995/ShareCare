@@ -60,7 +60,7 @@ export default function Profile() {
     // We pass 'null' to rightSidebar to override the default one,
     // because we are building a custom 2-column layout inside this page
     <MainLayout rightSidebar={null}>
-      <div className="px-20 pt-5 pb-20">
+      <div className="px-16 pt-5 pb-20">
         {/* --- 1. Profile Header & Banner --- */}
         <div className="mb-3 overflow-hidden bg-white border border-gray-100 shadow-sm rounded-[1.2rem]">
           {/* Banner Area */}

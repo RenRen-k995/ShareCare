@@ -181,17 +181,14 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
               Your real name, useful for verifications.
             </p>
           </div>
-          {/* Date of Birth */}
-          <div className="space-y-2">
-            <Label htmlFor="dateOfBirth" className="text-gray-700">
-              Date of Birth
-            </Label>
+          {/* Date of Birth Picker */}
+          <div className="space-y-3">
+            <Label className="font-semibold text-gray-700">Date of Birth</Label>
             <DatePicker
               value={formData.dateOfBirth}
               onChange={(date) =>
                 setFormData({ ...formData, dateOfBirth: date })
               }
-              placeholder="Select your date of birth"
             />
           </div>
           {/* Gender */}

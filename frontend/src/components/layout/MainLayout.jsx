@@ -8,9 +8,6 @@ export default function MainLayout({
   rightSidebar,
   leftSidebar = true,
 }) {
-  // If rightSidebar is explicitly null, we don't render it.
-  // If it's undefined, we render the default RightSidebar.
-  // If it's a component, we render that component.
   const shouldRenderRightSidebar = rightSidebar !== null;
 
   return (
