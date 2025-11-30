@@ -1,5 +1,6 @@
 import ChatRepository from "../repositories/ChatRepository.js";
 import { Chat, Message } from "../models/Chat.js";
+import { deleteFromCloudinary } from "../config/cloudinary.js";
 
 class ChatService {
   async getOrCreateChat(userId1, userId2, postId = null) {
@@ -204,6 +205,11 @@ class ChatService {
     // Only the sender can delete their own message
     if (message.sender.toString() !== userId.toString()) {
       throw new Error("Unauthorized: You can only delete your own messages");
+    }
+
+    // Delete file from Cloudinary if message has a file attachment
+    if (message.fileUrl) {
+      await deleteFromCloudinary(message.fileUrl);
     }
 
     // Soft delete
