@@ -317,6 +317,41 @@ export const initializeSocket = (httpServer) => {
       }
     });
 
+    // Handle message deletion
+    socket.on("message:delete", async ({ messageId }) => {
+      try {
+        const message = await Message.findById(messageId);
+
+        if (!message) {
+          socket.emit("error", { message: "Message not found" });
+          return;
+        }
+
+        // Only sender can delete
+        if (message.sender.toString() !== socket.userId) {
+          socket.emit("error", { message: "Unauthorized" });
+          return;
+        }
+
+        // Soft delete
+        message.isDeleted = true;
+        message.deletedAt = new Date();
+        message.deletedBy = socket.userId;
+        await message.save();
+
+        // Notify all participants in the chat
+        io.to(`chat:${message.chat}`).emit("message:deleted", {
+          messageId,
+          chatId: message.chat,
+          deletedBy: socket.userId,
+          deletedAt: message.deletedAt,
+        });
+      } catch (error) {
+        console.error("Message delete error:", error);
+        socket.emit("error", { message: error.message });
+      }
+    });
+
     // Handle message reactions
     socket.on("message:react", async ({ messageId, emoji }) => {
       try {

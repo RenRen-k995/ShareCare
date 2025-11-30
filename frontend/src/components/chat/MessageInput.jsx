@@ -53,22 +53,34 @@ export default function MessageInput({ chatId, onMessageSent }) {
 
   // Xử lý chọn file
   const handleFileSelect = (e) => {
+    console.log("File select triggered", e.target.files);
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      console.log("No file selected");
+      return;
+    }
+
+    console.log("File selected:", file.name, file.type, file.size);
 
     if (file.size > 10 * 1024 * 1024) {
       alert("File quá lớn! Vui lòng chọn file dưới 10MB.");
+      e.target.value = ""; // Reset input
       return;
     }
 
     setSelectedFile(file);
+    console.log("File set to state:", file.name);
 
     // Tạo preview local (chỉ để người gửi xem trước khi gửi)
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onloadend = () => setFilePreview(reader.result);
+      reader.onloadend = () => {
+        console.log("Image preview created");
+        setFilePreview(reader.result);
+      };
       reader.readAsDataURL(file);
     } else {
+      console.log("Non-image file, no preview");
       setFilePreview(null);
     }
   };
@@ -77,9 +89,10 @@ export default function MessageInput({ chatId, onMessageSent }) {
     setSelectedFile(null);
     setFilePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
-  // Upload file lên Server (Quan trọng: Để người khác thấy được)
+  // Upload file lên Server
   const uploadFileToServer = async (file) => {
     const formData = new FormData();
     formData.append("file", file); // Tên field phải khớp với multer ở backend
@@ -113,17 +126,19 @@ export default function MessageInput({ chatId, onMessageSent }) {
 
       // Nếu có file, upload trước
       if (selectedFile) {
+        console.log("Uploading file:", selectedFile.name, selectedFile.type);
         const uploadData = await uploadFileToServer(selectedFile);
+        console.log("Upload response:", uploadData);
 
         messageData.messageType = selectedFile.type.startsWith("image/")
           ? "image"
           : "file";
-        messageData.fileUrl = uploadData.fileUrl; // Đường dẫn tương đối từ server
-        messageData.fileName = selectedFile.name;
-        messageData.fileSize = selectedFile.size;
+        messageData.fileUrl = uploadData.fileUrl;
+        messageData.fileName = uploadData.fileName || selectedFile.name;
+        messageData.fileSize = uploadData.fileSize || selectedFile.size;
       }
 
-      // Gửi thông tin qua Socket (đã bao gồm URL từ server)
+      console.log("Sending message via socket:", messageData);
       sendMessage(messageData);
 
       // Reset
@@ -134,7 +149,7 @@ export default function MessageInput({ chatId, onMessageSent }) {
       onMessageSent?.();
     } catch (error) {
       console.error("Send error:", error);
-      alert("Gửi tin nhắn thất bại.");
+      alert(`Gửi tin nhắn thất bại: ${error.message}`);
     } finally {
       setUploading(false);
     }
@@ -195,6 +210,22 @@ export default function MessageInput({ chatId, onMessageSent }) {
         </div>
       )}
 
+      {/* Hidden File Inputs */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileSelect}
+        className="hidden"
+        accept=".pdf,.doc,.docx,.txt"
+      />
+
       {/* Main Input Row - Messenger Style */}
       <div className="flex items-end gap-2">
         {/* Plus Button with Popup Menu */}
@@ -215,23 +246,11 @@ export default function MessageInput({ chatId, onMessageSent }) {
 
           {/* Attachment Menu Popup */}
           {showAttachMenu && (
-            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-100 p-2 min-w-[160px]">
-              <input
-                ref={imageInputRef}
-                type="file"
-                onChange={handleFileSelect}
-                className="hidden"
-                accept="image/*"
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileSelect}
-                className="hidden"
-                accept=".pdf,.doc,.docx,.txt"
-              />
+            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-100 p-2 min-w-[160px] z-50">
               <button
+                type="button"
                 onClick={() => {
+                  console.log("Image button clicked");
                   imageInputRef.current?.click();
                   setShowAttachMenu(false);
                 }}
@@ -243,7 +262,9 @@ export default function MessageInput({ chatId, onMessageSent }) {
                 <span className="font-medium text-slate-700">Image</span>
               </button>
               <button
+                type="button"
                 onClick={() => {
+                  console.log("File button clicked");
                   fileInputRef.current?.click();
                   setShowAttachMenu(false);
                 }}

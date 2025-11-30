@@ -24,7 +24,7 @@ export const SocketProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [connectionStatus, setConnectionStatus] = useState("disconnected"); // disconnected, connecting, connected
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
-  
+
   // Use ref for message queue to avoid triggering socket recreation
   const messageQueueRef = useRef([]);
 
@@ -128,7 +128,10 @@ export const SocketProvider = ({ children }) => {
         socket.emit("message:send", data);
       } else {
         // Queue message if offline using ref
-        messageQueueRef.current = [...messageQueueRef.current, { event: "message:send", data }];
+        messageQueueRef.current = [
+          ...messageQueueRef.current,
+          { event: "message:send", data },
+        ];
       }
     },
     [socket, connected]
@@ -203,6 +206,15 @@ export const SocketProvider = ({ children }) => {
     [socket, connected]
   );
 
+  const deleteMessage = useCallback(
+    (messageId) => {
+      if (socket && connected) {
+        socket.emit("message:delete", { messageId });
+      }
+    },
+    [socket, connected]
+  );
+
   const value = {
     socket,
     connected,
@@ -219,6 +231,7 @@ export const SocketProvider = ({ children }) => {
     reactToMessage,
     searchChat,
     updateExchangeStatus,
+    deleteMessage,
   };
 
   return (

@@ -193,6 +193,27 @@ class ChatService {
 
     return totalUnread;
   }
+
+  async deleteMessage(messageId, userId) {
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    // Only the sender can delete their own message
+    if (message.sender.toString() !== userId.toString()) {
+      throw new Error("Unauthorized: You can only delete your own messages");
+    }
+
+    // Soft delete
+    message.isDeleted = true;
+    message.deletedAt = new Date();
+    message.deletedBy = userId;
+    await message.save();
+
+    return message;
+  }
 }
 
 export default new ChatService();
