@@ -7,6 +7,8 @@ import exchangeService from "../../services/exchangeService";
 import MessageInput from "./MessageInput";
 import ExchangeWidget from "./ExchangeWidget";
 import ExchangeRequestModal from "./ExchangeRequestModal";
+import { Avatar } from "../common";
+import { getFileUrl } from "../../constants";
 import { format } from "../../lib/utils";
 import {
   Check,
@@ -53,9 +55,6 @@ export default function ChatWindow({ chat, onBack }) {
   } = useSocket();
 
   const currentUserId = user?.id || user?._id;
-  const API_URL =
-    import.meta.env.VITE_API_URL?.replace("/api", "") ||
-    "http://localhost:5000";
 
   const otherUser = chat?.participants?.find(
     (p) => p._id !== currentUserId && p.id !== currentUserId
@@ -344,12 +343,6 @@ export default function ChatWindow({ chat, onBack }) {
     setShowSearch(false);
   };
 
-  const getFileUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
-    return `${API_URL}${url}`;
-  };
-
   const renderMessage = (message, index) => {
     const senderId = message.sender?._id || message.sender;
     const isMine = senderId?.toString() === currentUserId?.toString();
@@ -559,24 +552,14 @@ export default function ChatWindow({ chat, onBack }) {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="relative">
-            <div className="w-10 h-10 overflow-hidden border border-white rounded-full shadow-sm bg-slate-200">
-              {otherUser?.avatar ? (
-                <img
-                  src={otherUser.avatar}
-                  className="object-cover w-full h-full"
-                  alt={otherUser?.username}
-                />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full font-bold text-slate-500">
-                  {otherUser?.username?.[0]}
-                </div>
-              )}
-            </div>
-            {isOnline && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-            )}
-          </div>
+          <Avatar
+            src={otherUser?.avatar}
+            alt={otherUser?.username}
+            fallback={otherUser?.username}
+            size="md"
+            showOnline
+            isOnline={isOnline}
+          />
           <div>
             <h3 className="font-bold text-gray-900">
               {otherUser?.fullName || otherUser?.username}
