@@ -2,9 +2,25 @@ import express from "express";
 import PostController from "../controllers/PostController.js";
 import { authenticate } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
+import {
+  cloudinaryUpload,
+  processCloudinaryUpload,
+} from "../middleware/cloudinaryUpload.js";
 import { apiLimiter, postCreationLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
+
+// Check if Cloudinary is configured
+const useCloudinary = !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
+
+// Select appropriate upload middleware based on configuration
+const uploadMiddleware = useCloudinary
+  ? [cloudinaryUpload.single("image"), processCloudinaryUpload]
+  : [upload.single("image")];
 
 // Public routes
 router.get("/", apiLimiter, PostController.getPosts);
@@ -15,21 +31,21 @@ router.post(
   "/",
   postCreationLimiter,
   authenticate,
-  upload.single("image"),
+  ...uploadMiddleware,
   PostController.createPost
 );
 router.post(
   "/upload-image",
   apiLimiter,
   authenticate,
-  upload.single("image"),
+  ...uploadMiddleware,
   PostController.uploadImage
 );
 router.put(
   "/:id",
   apiLimiter,
   authenticate,
-  upload.single("image"),
+  ...uploadMiddleware,
   PostController.updatePost
 );
 router.delete("/:id", apiLimiter, authenticate, PostController.deletePost);
