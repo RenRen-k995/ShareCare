@@ -4,6 +4,7 @@ import { authenticate } from "../middleware/auth.js";
 import { apiLimiter } from "../middleware/rateLimiter.js";
 import upload from "../middleware/upload.js";
 import { uploadToCloudinary } from "../config/cloudinary.js";
+import { getCloudinaryFolder } from "../utils/fileUtils.js";
 
 const router = express.Router();
 
@@ -31,9 +32,12 @@ router.post(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      console.log("Uploading to Cloudinary:", req.file.path);
-      // Upload to Cloudinary
-      const result = await uploadToCloudinary(req.file.path, "chat_files");
+      // Determine the appropriate Cloudinary folder based on file type
+      const folder = getCloudinaryFolder(req.file.mimetype, "chat");
+
+      console.log("Uploading to Cloudinary:", req.file.path, "Folder:", folder);
+      // Upload to Cloudinary with separate folders for images and files
+      const result = await uploadToCloudinary(req.file.path, folder);
       console.log("Cloudinary upload successful:", result.secure_url);
 
       res.json({
