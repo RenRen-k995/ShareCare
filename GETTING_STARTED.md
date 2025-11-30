@@ -2,7 +2,7 @@
 
 ## New Design Implementation
 
-The ShareCare frontend has been completely redesigned with the SKPORT aesthetic featuring:
+The ShareCare frontend has been completely redesigned with a modern aesthetic featuring:
 
 - **Curved Frame Layout**: Unified white sidebar + header with rounded content area
 - **Modern UI Components**: Clean, rounded elements with gradient accents
