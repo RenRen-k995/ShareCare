@@ -2,6 +2,7 @@ import multer from "multer";
 import path from "path";
 import cloudinary from "../config/cloudinary.js";
 import { Readable } from "stream";
+import { getCloudinaryFolder } from "../utils/fileUtils.js";
 
 // Configure multer to use memory storage for Cloudinary uploads
 const storage = multer.memoryStorage();
@@ -67,8 +68,7 @@ const processCloudinaryUpload = async (req, res, next) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     
     // Determine the appropriate folder based on file type
-    const isImage = req.file.mimetype && req.file.mimetype.startsWith("image/");
-    const folder = isImage ? "sharecare/post_images" : "sharecare/post_files";
+    const folder = getCloudinaryFolder(req.file.mimetype, "post");
     
     const result = await uploadToCloudinary(req.file.buffer, {
       public_id: `${req.file.fieldname}-${uniqueSuffix}`,

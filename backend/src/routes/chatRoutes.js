@@ -4,6 +4,7 @@ import { authenticate } from "../middleware/auth.js";
 import { apiLimiter } from "../middleware/rateLimiter.js";
 import upload from "../middleware/upload.js";
 import { uploadToCloudinary } from "../config/cloudinary.js";
+import { getCloudinaryFolder } from "../utils/fileUtils.js";
 
 const router = express.Router();
 
@@ -32,8 +33,7 @@ router.post(
       }
 
       // Determine the appropriate Cloudinary folder based on file type
-      const isImage = req.file.mimetype && req.file.mimetype.startsWith("image/");
-      const folder = isImage ? "sharecare/chat_images" : "sharecare/chat_files";
+      const folder = getCloudinaryFolder(req.file.mimetype, "chat");
 
       console.log("Uploading to Cloudinary:", req.file.path, "Folder:", folder);
       // Upload to Cloudinary with separate folders for images and files
