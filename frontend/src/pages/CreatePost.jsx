@@ -12,7 +12,8 @@ import {
 } from "../components/ui/select";
 import CropModal from "../components/CropModal";
 import RichTextEditor from "../components/RichTextEditor";
-import { ChevronLeft, Image as ImageIcon } from "lucide-react";
+import { ErrorMessage, Avatar } from "../components/common";
+import { CATEGORY_OPTIONS } from "../constants";
 
 export default function CreatePost() {
   const [formData, setFormData] = useState({
@@ -121,13 +122,12 @@ export default function CreatePost() {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 overflow-hidden border border-gray-200 rounded-full">
-                <img
-                  src={user?.avatar || "https://github.com/shadcn.png"}
-                  alt="User"
-                  className="object-cover w-full h-full"
-                />
-              </div>
+              <Avatar
+                src={user?.avatar}
+                alt={user?.username}
+                fallback={user?.username}
+                size="sm"
+              />
             </div>
           </div>
         </div>
@@ -135,11 +135,7 @@ export default function CreatePost() {
 
       {/* --- Main Content --- */}
       <main className="flex-1 w-full max-w-4xl p-6 pb-32 mx-auto">
-        {error && (
-          <div className="p-3 mb-4 text-sm text-red-600 border border-red-100 rounded-lg bg-red-50">
-            {error}
-          </div>
-        )}
+        <ErrorMessage message={error} className="mb-4 rounded-lg" />
 
         {/* Main White Card Container */}
         {/* IMPORTANT: No overflow-hidden here, or sticky breaks */}
@@ -191,12 +187,11 @@ export default function CreatePost() {
                   <SelectValue placeholder="Select a channel" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="items">Items (Donation)</SelectItem>
-                  <SelectItem value="knowledge">Knowledge</SelectItem>
-                  <SelectItem value="emotional-support">
-                    Emotional Support
-                  </SelectItem>
+                  {CATEGORY_OPTIONS.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

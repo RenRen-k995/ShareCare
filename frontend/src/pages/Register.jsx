@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
+import { ErrorMessage } from '../components/common';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -46,11 +47,7 @@ export default function Register() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
-                {error}
-              </div>
-            )}
+            <ErrorMessage message={error} />
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input
