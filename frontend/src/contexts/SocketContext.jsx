@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import { io } from "socket.io-client";
 
@@ -22,8 +23,10 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [connectionStatus, setConnectionStatus] = useState("disconnected"); // disconnected, connecting, connected
-  const [messageQueue, setMessageQueue] = useState([]);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  
+  // Use ref for message queue to avoid triggering socket recreation
+  const messageQueueRef = useRef([]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -51,11 +54,11 @@ export const SocketProvider = ({ children }) => {
       setReconnectAttempt(0);
 
       // Send queued messages
-      if (messageQueue.length > 0) {
-        messageQueue.forEach((msg) => {
+      if (messageQueueRef.current.length > 0) {
+        messageQueueRef.current.forEach((msg) => {
           newSocket.emit(msg.event, msg.data);
         });
-        setMessageQueue([]);
+        messageQueueRef.current = [];
       }
     });
 
@@ -108,7 +111,7 @@ export const SocketProvider = ({ children }) => {
     return () => {
       newSocket.close();
     };
-  }, [messageQueue]);
+  }, []); // Remove messageQueue from dependencies
 
   const joinChat = useCallback(
     (chatId) => {
@@ -124,8 +127,8 @@ export const SocketProvider = ({ children }) => {
       if (socket && connected) {
         socket.emit("message:send", data);
       } else {
-        // Queue message if offline
-        setMessageQueue((prev) => [...prev, { event: "message:send", data }]);
+        // Queue message if offline using ref
+        messageQueueRef.current = [...messageQueueRef.current, { event: "message:send", data }];
       }
     },
     [socket, connected]

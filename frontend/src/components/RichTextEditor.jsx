@@ -21,6 +21,21 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 
+// Extracted outside component to prevent recreation on every render
+const ToolbarButton = ({ onClick, disabled, active, icon: Icon, label }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    title={label}
+    className={`p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-500 ${
+      active ? "bg-gray-100 text-black font-medium" : ""
+    } ${disabled ? "opacity-30 cursor-not-allowed" : ""}`}
+  >
+    <Icon className="w-5 h-5" strokeWidth={1.5} />
+  </button>
+);
+
 export default function RichTextEditor({
   content,
   onChange,
@@ -73,7 +88,7 @@ export default function RichTextEditor({
       if (file) {
         try {
           // Show loading state
-          const loadingNode = editor
+          editor
             .chain()
             .focus()
             .insertContent("<p>Uploading image...</p>")
@@ -119,20 +134,6 @@ export default function RichTextEditor({
   }, [editor]);
 
   if (!editor) return null;
-
-  const ToolbarButton = ({ onClick, disabled, active, icon: Icon, label }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={label}
-      className={`p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-500 ${
-        active ? "bg-gray-100 text-black font-medium" : ""
-      } ${disabled ? "opacity-30 cursor-not-allowed" : ""}`}
-    >
-      <Icon className="w-5 h-5" strokeWidth={1.5} />
-    </button>
-  );
 
   return (
     // This outer div creates the "Box" look (Border + Rounded)
