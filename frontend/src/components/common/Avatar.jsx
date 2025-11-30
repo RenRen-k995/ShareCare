@@ -56,7 +56,7 @@ export default function Avatar({
         {src ? (
           <img src={src} alt={alt} className="object-cover w-full h-full" />
         ) : (
-          <div className="flex items-center justify-center w-full h-full font-bold text-slate-400 bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
+          <div className="flex items-center justify-center w-full h-full font-bold text-white bg-gradient-to-br from-blue-400 to-indigo-500">
             {getFallbackLetter()}
           </div>
         )}

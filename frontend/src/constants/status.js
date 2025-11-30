@@ -1,5 +1,6 @@
 /**
  * Post status configuration
+ * Note: 'unavailable' is the backend status, 'donated' is a display alias
  */
 export const POST_STATUS = {
   available: {
@@ -12,12 +13,6 @@ export const POST_STATUS = {
     value: "unavailable",
     label: "Donated",
     badgeClass: "text-white bg-blue-500 border-blue-500",
-    dotClass: "bg-white",
-  },
-  donated: {
-    value: "donated",
-    label: "Donated",
-    badgeClass: "bg-blue-500 text-white hover:bg-blue-600 border-transparent",
     dotClass: "bg-white",
   },
 };
