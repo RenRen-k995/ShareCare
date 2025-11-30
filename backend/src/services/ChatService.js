@@ -103,21 +103,22 @@ class ChatService {
 
   async markMessagesAsRead(chatId, userId) {
     try {
-      // Find unread messages in this chat
-      const messages = await Message.find({
-        chat: chatId,
-        sender: { $ne: userId },
-        "readBy.user": { $ne: userId },
-      });
-
-      // Mark each message as read
-      for (const message of messages) {
-        message.readBy.push({
-          user: userId,
-          readAt: new Date(),
-        });
-        await message.save();
-      }
+      // Use bulk update instead of iterating and saving individually
+      await Message.updateMany(
+        {
+          chat: chatId,
+          sender: { $ne: userId },
+          "readBy.user": { $ne: userId },
+        },
+        {
+          $push: {
+            readBy: {
+              user: userId,
+              readAt: new Date(),
+            },
+          },
+        }
+      );
 
       // Reset unread count
       const chat = await Chat.findById(chatId);

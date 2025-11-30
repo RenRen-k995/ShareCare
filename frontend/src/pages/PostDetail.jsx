@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { formatTimeAgo } from "../lib/utils";
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -229,33 +230,6 @@ export default function PostDetail() {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-    });
-  };
-
-  const formatTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600) {
-      const minutes = Math.floor(diffInSeconds / 60);
-      return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-    }
-    if (diffInSeconds < 86400) {
-      const hours = Math.floor(diffInSeconds / 3600);
-      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-    }
-    if (diffInSeconds < 2592000) {
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    }
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
     });
   };
 

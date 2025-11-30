@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "./ui/badge";
 import {
@@ -15,6 +15,17 @@ import {
   extractTextFromHtml,
   extractFirstLineFromHtml,
 } from "../utils/htmlUtils";
+import { formatTimeAgo } from "../lib/utils";
+
+// Extracted outside component to prevent recreation on every render
+const CATEGORY_STYLES = {
+  items: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-transparent",
+  knowledge: "bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent",
+  "emotional-support": "bg-purple-100 text-purple-700 hover:bg-purple-200 border-transparent",
+  other: "bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent",
+};
+
+const getCategoryStyles = (category) => CATEGORY_STYLES[category] || CATEGORY_STYLES.other;
 
 export default function PostCard({ post, onUpdate, onDelete }) {
   const { user } = useAuth();
@@ -84,33 +95,6 @@ export default function PostCard({ post, onUpdate, onDelete }) {
     }
   };
 
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600)
-      return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-    if (diffInSeconds < 86400)
-      return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
-
-  const getCategoryStyles = (category) => {
-    const styles = {
-      items:
-        "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-transparent",
-      knowledge:
-        "bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent",
-      "emotional-support":
-        "bg-purple-100 text-purple-700 hover:bg-purple-200 border-transparent",
-      other:
-        "bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent",
-    };
-    return styles[category] || styles["other"];
-  };
-
   return (
     <>
       <Link
@@ -150,7 +134,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                   {post.author?.username || "Unknown"}
                 </span>
                 <span className="text-sm text-slate-400">
-                  {formatTime(post.createdAt)}
+                  {formatTimeAgo(post.createdAt)}
                 </span>
               </div>
 
