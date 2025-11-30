@@ -31,9 +31,13 @@ router.post(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      console.log("Uploading to Cloudinary:", req.file.path);
-      // Upload to Cloudinary
-      const result = await uploadToCloudinary(req.file.path, "chat_files");
+      // Determine the appropriate Cloudinary folder based on file type
+      const isImage = req.file.mimetype && req.file.mimetype.startsWith("image/");
+      const folder = isImage ? "sharecare/chat_images" : "sharecare/chat_files";
+
+      console.log("Uploading to Cloudinary:", req.file.path, "Folder:", folder);
+      // Upload to Cloudinary with separate folders for images and files
+      const result = await uploadToCloudinary(req.file.path, folder);
       console.log("Cloudinary upload successful:", result.secure_url);
 
       res.json({

@@ -40,7 +40,7 @@ const uploadToCloudinary = (buffer, options = {}) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: "sharecare",
+        folder: options.folder || "sharecare",
         resource_type: "auto",
         ...options,
       },
@@ -65,8 +65,14 @@ const processCloudinaryUpload = async (req, res, next) => {
 
   try {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    
+    // Determine the appropriate folder based on file type
+    const isImage = req.file.mimetype && req.file.mimetype.startsWith("image/");
+    const folder = isImage ? "sharecare/post_images" : "sharecare/post_files";
+    
     const result = await uploadToCloudinary(req.file.buffer, {
       public_id: `${req.file.fieldname}-${uniqueSuffix}`,
+      folder: folder,
     });
 
     // Replace file info with Cloudinary result
