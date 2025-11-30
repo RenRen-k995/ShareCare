@@ -44,7 +44,7 @@ ShareCare uses MongoDB with Mongoose ODM. This document describes the database s
 │ image            │                                               │              │
 │ contentImages[]  │                                               │              │
 │ author ──────────┼──► User._id                                   │              │
-│ reactions[]      │    (user → User._id)                          │              │
+│ reactions[] ─────┼──► [{user: User._id, type: String}]           │              │
 │ viewCount        │                                               │              │
 │ viewedBy[] ──────┼──► User._id                                   │              │
 │ createdAt        │                                               │              │
@@ -199,7 +199,7 @@ ShareCare uses MongoDB with Mongoose ODM. This document describes the database s
 | image | String | Featured image URL |
 | contentImages | Array | Inline image URLs |
 | author | ObjectId | Reference to User |
-| reactions | Array | User reactions with type |
+| reactions | Array | Array of {user: ObjectId, type: Enum} objects |
 | viewCount | Number | Total views |
 | viewedBy | Array | Users who viewed |
 
