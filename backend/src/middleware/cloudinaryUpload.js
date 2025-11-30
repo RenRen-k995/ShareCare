@@ -1,4 +1,5 @@
 import multer from "multer";
+import path from "path";
 import cloudinary from "../config/cloudinary.js";
 import { Readable } from "stream";
 
@@ -9,7 +10,9 @@ const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
   // Accept images and common document types
   const allowedTypes = /jpeg|jpg|png|gif|webp|pdf|doc|docx|txt/;
-  const extname = allowedTypes.test(file.originalname.toLowerCase());
+  const extname = allowedTypes.test(
+    path.extname(file.originalname).toLowerCase()
+  );
   const mimetype =
     allowedTypes.test(file.mimetype) || file.mimetype.startsWith("image/");
 
@@ -61,8 +64,9 @@ const processCloudinaryUpload = async (req, res, next) => {
   }
 
   try {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const result = await uploadToCloudinary(req.file.buffer, {
-      public_id: `${req.file.fieldname}-${Date.now()}`,
+      public_id: `${req.file.fieldname}-${uniqueSuffix}`,
     });
 
     // Replace file info with Cloudinary result
