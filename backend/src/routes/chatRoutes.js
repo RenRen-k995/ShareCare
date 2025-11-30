@@ -5,7 +5,8 @@ import { apiLimiter } from "../middleware/rateLimiter.js";
 import upload from "../middleware/upload.js";
 import {
   cloudinaryUpload,
-  createCloudinaryProcessor,
+  uploadToCloudinary,
+  generateUniqueSuffix,
 } from "../middleware/cloudinaryUpload.js";
 
 const router = express.Router();
@@ -16,10 +17,6 @@ const useCloudinary = !!(
   process.env.CLOUDINARY_API_KEY &&
   process.env.CLOUDINARY_API_SECRET
 );
-
-// Create Cloudinary processors for chat images and files with separate folders
-const processChatImage = createCloudinaryProcessor("sharecare/chat/images");
-const processChatFile = createCloudinaryProcessor("sharecare/chat/files");
 
 // All routes are protected
 router.post("/", apiLimiter, authenticate, ChatController.getOrCreateChat);
@@ -33,7 +30,7 @@ router.get(
 );
 
 // Chat file upload endpoint - use Cloudinary if configured, otherwise fallback to local storage
-router.post("/upload", authenticate, async (req, res, next) => {
+router.post("/upload", authenticate, (req, res, next) => {
   if (useCloudinary) {
     // Use Cloudinary with memory storage
     cloudinaryUpload.single("file")(req, res, async (err) => {
@@ -50,26 +47,23 @@ router.post("/upload", authenticate, async (req, res, next) => {
       try {
         // Determine folder based on file type (image vs document)
         const isImage = req.file.mimetype.startsWith("image/");
-        const processUpload = isImage ? processChatImage : processChatFile;
+        const folder = isImage ? "sharecare/chat/images" : "sharecare/chat/files";
 
-        // Process upload to Cloudinary
-        await processUpload(req, res, (uploadErr) => {
-          if (uploadErr) {
-            return res
-              .status(500)
-              .json({ message: "Cloudinary upload failed", error: uploadErr.message });
-          }
+        const uniqueSuffix = generateUniqueSuffix();
+        const result = await uploadToCloudinary(req.file.buffer, {
+          folder,
+          public_id: `${req.file.fieldname}-${uniqueSuffix}`,
+        });
 
-          res.json({
-            fileUrl: req.file.cloudinaryUrl,
-            fileName: req.file.originalname,
-            fileSize: req.file.size,
-          });
+        res.json({
+          fileUrl: result.secure_url,
+          fileName: req.file.originalname,
+          fileSize: req.file.size,
         });
       } catch (error) {
         res
           .status(500)
-          .json({ message: "File upload failed", error: error.message });
+          .json({ message: "Cloudinary upload failed", error: error.message });
       }
     });
   } else {
