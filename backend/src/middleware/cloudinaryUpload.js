@@ -38,9 +38,11 @@ const cloudinaryUpload = multer({
 // Helper function to upload buffer to Cloudinary
 const uploadToCloudinary = (buffer, options = {}) => {
   return new Promise((resolve, reject) => {
+    // Default folder is "sharecare", but can be overridden via options.folder
+    const folder = options.folder || "sharecare";
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: "sharecare",
+        folder,
         resource_type: "auto",
         ...options,
       },
@@ -80,4 +82,30 @@ const processCloudinaryUpload = async (req, res, next) => {
   }
 };
 
-export { cloudinaryUpload, processCloudinaryUpload, uploadToCloudinary };
+// Factory function to create a Cloudinary upload processor with a custom folder
+const createCloudinaryProcessor = (folder) => {
+  return async (req, res, next) => {
+    if (!req.file) {
+      return next();
+    }
+
+    try {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder,
+        public_id: `${req.file.fieldname}-${uniqueSuffix}`,
+      });
+
+      // Replace file info with Cloudinary result
+      req.file.cloudinaryUrl = result.secure_url;
+      req.file.cloudinaryPublicId = result.public_id;
+      req.file.filename = result.public_id;
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+export { cloudinaryUpload, processCloudinaryUpload, uploadToCloudinary, createCloudinaryProcessor };

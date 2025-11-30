@@ -4,7 +4,7 @@ import { authenticate } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
 import {
   cloudinaryUpload,
-  processCloudinaryUpload,
+  createCloudinaryProcessor,
 } from "../middleware/cloudinaryUpload.js";
 import { apiLimiter, postCreationLimiter } from "../middleware/rateLimiter.js";
 
@@ -17,9 +17,12 @@ const useCloudinary = !!(
   process.env.CLOUDINARY_API_SECRET
 );
 
+// Create Cloudinary processor for post images with dedicated folder
+const processPostImage = createCloudinaryProcessor("sharecare/posts");
+
 // Select appropriate upload middleware based on configuration
 const uploadMiddleware = useCloudinary
-  ? [cloudinaryUpload.single("image"), processCloudinaryUpload]
+  ? [cloudinaryUpload.single("image"), processPostImage]
   : [upload.single("image")];
 
 // Public routes
