@@ -91,8 +91,11 @@ export default function MessageInput({ chatId, onMessageSent }) {
       body: formData,
     });
 
-    if (!res.ok) throw new Error("Upload failed");
-    return await res.json(); // Trả về { fileUrl: "/uploads/...", ... }
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Upload failed");
+    }
+    return await res.json(); // Trả về { fileUrl: "cloudinary URL", ... }
   };
 
   const handleSend = async () => {

@@ -220,13 +220,13 @@ export default function PostCard({ post, onUpdate, onDelete }) {
 
         {/* --- TITLE --- */}
         <div className="px-1 mb-1 text-gray-900 text-[17px]">
-          <p>{extractTextFromHtml(post.title, 100)}</p>
+          <p className="line-clamp-1">{extractTextFromHtml(post.title, 70)}</p>
         </div>
 
         {/* --- TEXT CONTENT --- */}
         <div className="px-1 mb-4">
-          <p className="text-gray-400 text-[15px] leading-relaxed truncate">
-            {extractFirstLineFromHtml(post.description, 120)}
+          <p className="text-gray-400 text-[15px] leading-relaxed line-clamp-1">
+            {extractFirstLineFromHtml(post.description, 80)}
           </p>
         </div>
 

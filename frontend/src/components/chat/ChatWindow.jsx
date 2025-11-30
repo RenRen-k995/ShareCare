@@ -382,58 +382,61 @@ export default function ChatWindow({ chat, onBack }) {
           }`}
         >
           <div className="relative overflow-visible group">
-            <div
-              className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
-                isMine
-                  ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-br-none"
-                  : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
-              }`}
-            >
-              {/* Image Type */}
-              {message.messageType === "image" && (
-                <div className="max-w-xs mb-1 overflow-hidden rounded-lg max-h-80">
-                  <img
-                    src={getFileUrl(message.fileUrl)}
-                    alt="Sent image"
-                    className="object-contain w-full h-auto max-w-full cursor-pointer max-h-80 hover:opacity-90"
-                    onClick={() =>
-                      window.open(getFileUrl(message.fileUrl), "_blank")
-                    }
-                  />
-                </div>
-              )}
+            {/* Image Type - No bubble wrapper */}
+            {message.messageType === "image" && (
+              <div className="max-w-xs overflow-hidden rounded-2xl shadow-sm">
+                <img
+                  src={getFileUrl(message.fileUrl)}
+                  alt="Sent image"
+                  className="object-cover w-full h-auto cursor-pointer max-h-80 hover:opacity-90 transition-opacity"
+                  onClick={() =>
+                    window.open(getFileUrl(message.fileUrl), "_blank")
+                  }
+                />
+              </div>
+            )}
 
-              {/* File Type */}
-              {message.messageType === "file" && (
-                <a
-                  href={getFileUrl(message.fileUrl)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${
-                    isMine ? "bg-white/20" : "bg-gray-100 hover:bg-gray-200"
-                  }`}
-                >
-                  <div className="p-1.5 bg-white rounded-full text-emerald-500">
-                    <FileText size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">
-                      {message.fileName || "Document"}
-                    </p>
-                    <p className="text-xs opacity-80">
-                      {(message.fileSize / 1024).toFixed(0)} KB
-                    </p>
-                  </div>
-                </a>
-              )}
+            {/* Text and File messages with bubble */}
+            {message.messageType !== "image" && (
+              <div
+                className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
+                  isMine
+                    ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-br-none"
+                    : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+                }`}
+              >
+                {/* File Type */}
+                {message.messageType === "file" && (
+                  <a
+                    href={getFileUrl(message.fileUrl)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${
+                      isMine ? "bg-white/20" : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                  >
+                    <div className="p-1.5 bg-white rounded-full text-emerald-500">
+                      <FileText size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">
+                        {message.fileName || "Document"}
+                      </p>
+                      <p className="text-xs opacity-80">
+                        {(message.fileSize / 1024).toFixed(0)} KB
+                      </p>
+                    </div>
+                  </a>
+                )}
 
-              {/* Text Content */}
-              {message.content && (
-                <p className="leading-relaxed break-words whitespace-pre-wrap">
-                  {message.content}
-                </p>
-              )}
-            </div>
+                {/* Text Content */}
+                {message.content && (
+                  <p className="leading-relaxed break-words whitespace-pre-wrap">
+                    {message.content}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Reaction Button */}
             <button
