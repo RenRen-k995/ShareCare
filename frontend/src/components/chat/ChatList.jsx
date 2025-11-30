@@ -3,6 +3,7 @@ import { useSocket } from "../../contexts/SocketContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { chatService } from "../../services/chatService";
 import { formatDistanceToNow } from "../../lib/utils";
+import { Avatar } from "../common";
 
 export default function ChatList({
   onSelectChat,
@@ -178,26 +179,14 @@ export default function ChatList({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="relative flex-shrink-0">
-                      {otherUser?.avatar ? (
-                        <img
-                          src={otherUser.avatar}
-                          alt={otherUser.fullName || otherUser.username}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
-                          <span className="text-lg font-semibold text-gray-600">
-                            {(otherUser?.fullName ||
-                              otherUser?.username ||
-                              "?")[0].toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      {isOnline && (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
-                      )}
-                    </div>
+                    <Avatar
+                      src={otherUser?.avatar}
+                      alt={otherUser?.fullName || otherUser?.username}
+                      fallback={otherUser?.fullName || otherUser?.username}
+                      size="lg"
+                      showOnline
+                      isOnline={isOnline}
+                    />
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">

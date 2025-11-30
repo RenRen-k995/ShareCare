@@ -16,20 +16,10 @@ import {
   extractFirstLineFromHtml,
 } from "../utils/htmlUtils";
 import { formatTimeAgo } from "../lib/utils";
-
-// Extracted outside component to prevent recreation on every render
-const CATEGORY_STYLES = {
-  items: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-transparent",
-  knowledge: "bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent",
-  "emotional-support": "bg-purple-100 text-purple-700 hover:bg-purple-200 border-transparent",
-  other: "bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent",
-};
-
-const getCategoryStyles = (category) => CATEGORY_STYLES[category] || CATEGORY_STYLES.other;
+import { getCategoryStyles, getImageUrl } from "../constants";
 
 export default function PostCard({ post, onUpdate, onDelete }) {
   const { user } = useAuth();
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
@@ -221,7 +211,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         {post.image && (
           <div className="w-9/12 mb-3 overflow-hidden border rounded-2xl border-slate-100">
             <img
-              src={`${API_URL}${post.image}`}
+              src={getImageUrl(post.image)}
               alt={post.title}
               className="w-full h-auto object-cover max-h-[500px] hover:scale-[1.01] transition-transform duration-500"
             />

@@ -9,6 +9,7 @@ import {
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Send } from "lucide-react";
+import { getImageUrl } from "../../constants";
 
 export default function ExchangeRequestModal({
   isOpen,
@@ -16,8 +17,6 @@ export default function ExchangeRequestModal({
   onConfirm,
   post,
 }) {
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
   // Generate default message based on post
   const getDefaultMessage = () => {
     return `Hi! I'm interested in "${
@@ -65,11 +64,7 @@ export default function ExchangeRequestModal({
           <div className="flex gap-4 p-3 mb-4 border bg-slate-50 rounded-xl border-slate-100">
             <div className="w-16 h-16 overflow-hidden bg-white rounded-lg shrink-0">
               <img
-                src={
-                  post?.image?.startsWith("http")
-                    ? post.image
-                    : `${API_URL}${post?.image}`
-                }
+                src={getImageUrl(post?.image)}
                 className="object-cover w-full h-full"
                 alt={post?.title || ""}
                 onError={(e) => {
