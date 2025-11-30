@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "./ui/badge";
 import {
@@ -15,10 +15,11 @@ import {
   extractTextFromHtml,
   extractFirstLineFromHtml,
 } from "../utils/htmlUtils";
+import { formatTimeAgo } from "../lib/utils";
+import { getCategoryStyles, getImageUrl } from "../constants";
 
 export default function PostCard({ post, onUpdate, onDelete }) {
   const { user } = useAuth();
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
@@ -84,33 +85,6 @@ export default function PostCard({ post, onUpdate, onDelete }) {
     }
   };
 
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600)
-      return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-    if (diffInSeconds < 86400)
-      return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
-
-  const getCategoryStyles = (category) => {
-    const styles = {
-      items:
-        "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-transparent",
-      knowledge:
-        "bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent",
-      "emotional-support":
-        "bg-purple-100 text-purple-700 hover:bg-purple-200 border-transparent",
-      other:
-        "bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent",
-    };
-    return styles[category] || styles["other"];
-  };
-
   return (
     <>
       <Link
@@ -150,7 +124,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                   {post.author?.username || "Unknown"}
                 </span>
                 <span className="text-sm text-slate-400">
-                  {formatTime(post.createdAt)}
+                  {formatTimeAgo(post.createdAt)}
                 </span>
               </div>
 
@@ -237,7 +211,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         {post.image && (
           <div className="w-9/12 mb-3 overflow-hidden border rounded-2xl border-slate-100">
             <img
-              src={`${API_URL}${post.image}`}
+              src={getImageUrl(post.image)}
               alt={post.title}
               className="w-full h-auto object-cover max-h-[500px] hover:scale-[1.01] transition-transform duration-500"
             />
@@ -246,13 +220,13 @@ export default function PostCard({ post, onUpdate, onDelete }) {
 
         {/* --- TITLE --- */}
         <div className="px-1 mb-1 text-gray-900 text-[17px]">
-          <p>{extractTextFromHtml(post.title, 100)}</p>
+          <p className="line-clamp-1">{extractTextFromHtml(post.title, 70)}</p>
         </div>
 
         {/* --- TEXT CONTENT --- */}
         <div className="px-1 mb-4">
-          <p className="text-gray-400 text-[15px] leading-relaxed truncate">
-            {extractFirstLineFromHtml(post.description, 120)}
+          <p className="text-gray-400 text-[15px] leading-relaxed line-clamp-1">
+            {extractFirstLineFromHtml(post.description, 80)}
           </p>
         </div>
 

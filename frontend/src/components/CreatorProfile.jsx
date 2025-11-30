@@ -1,6 +1,7 @@
 import React from "react";
 import { Plus, Check } from "lucide-react";
 import { Button } from "./ui/button";
+import { Avatar } from "./common";
 
 export default function CreatorProfile({ author }) {
   if (!author) return null;
@@ -14,18 +15,12 @@ export default function CreatorProfile({ author }) {
 
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 overflow-hidden bg-yellow-100 border-2 border-white rounded-full shadow-sm">
-              {author.avatar ? (
-                <img
-                  src={author.avatar}
-                  alt={author.username}
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                // Using a playful icon placeholder like the reference
-                <span className="text-2xl">🐰</span>
-              )}
-            </div>
+            <Avatar
+              src={author.avatar}
+              alt={author.username}
+              fallback={author.username}
+              size="lg"
+            />
             <div>
               <h4 className="text-base font-bold text-gray-900">
                 {author.fullName || author.username}
@@ -35,7 +30,7 @@ export default function CreatorProfile({ author }) {
 
           <Button
             size="icon"
-            className="text-white rounded-full shadow-sm bg-cyan-400 hover:bg-cyan-500 w-9 h-9"
+            className="text-white rounded-full shadow-sm bg-cyan-400 hover:bg-cyan-500 w-7 h-7"
           >
             <Plus className="w-5 h-5" />
           </Button>
@@ -52,7 +47,7 @@ export default function CreatorProfile({ author }) {
         </div>
 
         <p className="text-[13px] text-gray-500 leading-relaxed mb-8 border-t border-gray-50 pt-4">
-          {author.bio || "Mock Bio."}
+          {author.bio || "No bio yet."}
         </p>
 
         <div className="flex items-center justify-between px-1">
@@ -65,13 +60,17 @@ export default function CreatorProfile({ author }) {
             </div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-gray-900">280</div>
+            <div className="text-lg font-bold text-gray-900">
+              {author.followers?.length || 0}
+            </div>
             <div className="text-[11px] text-gray-400 uppercase tracking-wide font-medium">
               Followers
             </div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-gray-900">0</div>
+            <div className="text-lg font-bold text-gray-900">
+              {author.following?.length || 0}
+            </div>
             <div className="text-[11px] text-gray-400 uppercase tracking-wide font-medium">
               Following
             </div>

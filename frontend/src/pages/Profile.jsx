@@ -4,15 +4,13 @@ import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
 import MainLayout from "../components/layout/MainLayout";
 import PostCard from "../components/PostCard";
-import LoadingSpinner from "../components/LoadingSpinner";
+import { Avatar, PageLoadingState, EmptyState } from "../components/common";
 import {
-  MapPin,
   Calendar,
   Edit3,
   LayoutGrid,
   Heart,
   MessageSquare,
-  Star,
   User as UserIcon,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -80,19 +78,13 @@ export default function Profile() {
               <div className="flex items-end gap-5">
                 {/* Avatar */}
                 <div className="w-32 h-32 rounded-full bg-white p-1.5 shadow-sm relative z-10">
-                  <div className="w-full h-full overflow-hidden border rounded-full bg-slate-100 border-slate-100">
-                    {user.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={user.username}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full text-4xl font-bold text-white bg-gradient-to-br from-blue-500 to-purple-500">
-                        {user.username?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+                  <Avatar
+                    src={user.avatar}
+                    alt={user.username}
+                    fallback={user.username}
+                    size="3xl"
+                    className="w-full h-full"
+                  />
                 </div>
 
                 {/* Name & Stats */}
@@ -225,9 +217,7 @@ export default function Profile() {
 
             {/* Feed Content */}
             {loading ? (
-              <div className="py-10">
-                <LoadingSpinner />
-              </div>
+              <PageLoadingState message="Loading posts..." />
             ) : userPosts.length > 0 ? (
               <div className="space-y-4">
                 {userPosts.map((post) => (
@@ -239,17 +229,10 @@ export default function Profile() {
                 ))}
               </div>
             ) : (
-              // Empty State (Matches reference)
-              <div className="flex flex-col items-center justify-center py-16 bg-white rounded-[1.2rem] border border-dashed border-gray-200">
-                <div className="flex items-center justify-center w-32 h-32 mb-4 bg-gray-50 rounded-2xl">
-                  <img
-                    src="/vite.svg"
-                    className="w-12 h-12 opacity-20 grayscale"
-                    alt="No content"
-                  />
-                </div>
-                <p className="font-medium text-gray-400">No posts yet</p>
-              </div>
+              <EmptyState
+                title="No posts yet"
+                className="rounded-[1.2rem] border border-dashed border-gray-200"
+              />
             )}
           </div>
 

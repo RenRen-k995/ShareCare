@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
@@ -8,6 +8,8 @@ import exchangeService from "../services/exchangeService";
 import CreatorProfile from "../components/CreatorProfile";
 import MainLayout from "../components/layout/MainLayout";
 import ExchangeRequestModal from "../components/chat/ExchangeRequestModal";
+import { Avatar } from "../components/common";
+import { getImageUrl } from "../constants";
 import {
   ThumbsUp,
   MessageSquare,
@@ -20,6 +22,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { formatTimeAgo } from "../lib/utils";
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -38,8 +41,6 @@ export default function PostDetail() {
   const mainTextareaRef = useRef(null);
   const stickyTextareaRef = useRef(null);
   const [showStickyFooter, setShowStickyFooter] = useState(false);
-
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -232,33 +233,6 @@ export default function PostDetail() {
     });
   };
 
-  const formatTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600) {
-      const minutes = Math.floor(diffInSeconds / 60);
-      return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-    }
-    if (diffInSeconds < 86400) {
-      const hours = Math.floor(diffInSeconds / 3600);
-      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-    }
-    if (diffInSeconds < 2592000) {
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    }
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   if (loading) return <div className="p-10 text-center">Loading...</div>;
   if (!post) return <div className="p-10 text-center">Post not found</div>;
 
@@ -322,7 +296,7 @@ export default function PostDetail() {
           {post.image && (
             <div className="w-full aspect-[2.1] rounded-2xl overflow-hidden bg-gray-100 mb-10 shadow-md border border-gray-100">
               <img
-                src={`${API_URL}${post.image}`}
+                src={getImageUrl(post.image)}
                 alt={post.title}
                 className="object-cover w-full h-full"
               />
@@ -368,15 +342,12 @@ export default function PostDetail() {
         >
           {/* ... Input Code ... */}
           <div className="flex gap-4">
-            <div className="w-10 h-10 overflow-hidden bg-gray-100 border rounded-full shrink-0 border-gray-50">
-              {user?.avatar ? (
-                <img src={user.avatar} className="object-cover w-full h-full" />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full font-bold text-gray-400">
-                  {user?.username?.[0]}
-                </div>
-              )}
-            </div>
+            <Avatar
+              src={user?.avatar}
+              alt={user?.username}
+              fallback={user?.username}
+              size="md"
+            />
             <div className="relative flex-1">
               <textarea
                 ref={mainTextareaRef}
@@ -550,15 +521,12 @@ export default function PostDetail() {
               newComment.trim() ? "border-emerald-400" : "border-gray-200"
             }`}
           >
-            <div className="w-8 h-8 overflow-hidden bg-gray-200 rounded-full shrink-0">
-              {user?.avatar ? (
-                <img src={user.avatar} className="object-cover w-full h-full" />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full text-xs font-bold text-gray-500">
-                  {user?.username?.[0]}
-                </div>
-              )}
-            </div>
+            <Avatar
+              src={user?.avatar}
+              alt={user?.username}
+              fallback={user?.username}
+              size="sm"
+            />
             <textarea
               ref={stickyTextareaRef}
               value={newComment}

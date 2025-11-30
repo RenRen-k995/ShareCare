@@ -5,6 +5,8 @@ import postService from "../services/postService";
 import PostCard from "../components/PostCard";
 import MainLayout from "../components/layout/MainLayout";
 import CreatePostWidget from "../components/CreatePostWidget";
+import { ErrorMessage, EmptyState, PageLoadingState } from "../components/common";
+import { Button } from "../components/ui/button";
 
 export default function Home() {
   const [searchParams] = useSearchParams();
@@ -53,28 +55,24 @@ export default function Home() {
         {user && <CreatePostWidget />}
 
         {/* Error Message */}
-        {error && (
-          <div className="p-4 mb-6 text-red-600 bg-red-50 rounded-xl">
-            {error}
-          </div>
-        )}
+        <ErrorMessage message={error} className="mb-6 rounded-xl" />
 
         {/* Posts Feed */}
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-gray-600">Loading posts...</div>
-          </div>
+          <PageLoadingState message="Loading posts..." />
         ) : posts.length === 0 ? (
-          <div className="py-12 text-center bg-white shadow-sm rounded-2xl">
-            <p className="mb-4 text-lg text-gray-600">No posts found</p>
-            {user && (
-              <Link to="/posts/new">
-                <button className="px-6 py-3 font-semibold text-white transition-all rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 hover:shadow-lg">
-                  Create the first post
-                </button>
-              </Link>
-            )}
-          </div>
+          <EmptyState
+            title="No posts found"
+            action={
+              user && (
+                <Link to="/posts/new">
+                  <Button className="px-6 py-3 font-semibold text-white transition-all rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 hover:shadow-lg">
+                    Create the first post
+                  </Button>
+                </Link>
+              )
+            }
+          />
         ) : (
           <div className="space-y-1">
             {posts.map((post) => (

@@ -9,6 +9,7 @@ import {
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Send } from "lucide-react";
+import { getImageUrl } from "../../constants";
 
 export default function ExchangeRequestModal({
   isOpen,
@@ -16,8 +17,6 @@ export default function ExchangeRequestModal({
   onConfirm,
   post,
 }) {
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
   // Generate default message based on post
   const getDefaultMessage = () => {
     return `Hi! I'm interested in "${
@@ -53,7 +52,7 @@ export default function ExchangeRequestModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white sm:max-w-md rounded-2xl">
+      <DialogContent className="bg-white sm:max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-gray-900">
             Request Item
@@ -65,11 +64,7 @@ export default function ExchangeRequestModal({
           <div className="flex gap-4 p-3 mb-4 border bg-slate-50 rounded-xl border-slate-100">
             <div className="w-16 h-16 overflow-hidden bg-white rounded-lg shrink-0">
               <img
-                src={
-                  post?.image?.startsWith("http")
-                    ? post.image
-                    : `${API_URL}${post?.image}`
-                }
+                src={getImageUrl(post?.image)}
                 className="object-cover w-full h-full"
                 alt={post?.title || ""}
                 onError={(e) => {
@@ -78,7 +73,7 @@ export default function ExchangeRequestModal({
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-bold text-gray-800 truncate">
+              <h4 className="text-sm font-bold text-gray-800 line-clamp-2">
                 {post?.title}
               </h4>
               <p className="mt-1 text-xs text-gray-500 line-clamp-2">

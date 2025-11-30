@@ -22,12 +22,14 @@ const storage = multer.diskStorage({
 // File filter
 const fileFilter = (req, file, cb) => {
   // Accept images and common document types
-  const allowedTypes = /jpeg|jpg|png|gif|webp|pdf|doc|docx|txt/;
-  const extname = allowedTypes.test(
+  const allowedExtensions = /jpeg|jpg|png|gif|webp|pdf|doc|docx|txt/;
+  const allowedMimeTypes =
+    /image\/.*|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|text\/plain/;
+
+  const extname = allowedExtensions.test(
     path.extname(file.originalname).toLowerCase()
   );
-  const mimetype =
-    allowedTypes.test(file.mimetype) || file.mimetype.startsWith("image/");
+  const mimetype = allowedMimeTypes.test(file.mimetype);
 
   if (mimetype && extname) {
     cb(null, true);

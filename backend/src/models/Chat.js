@@ -90,6 +90,17 @@ const messageSchema = new mongoose.Schema(
     deliveredAt: {
       type: Date,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+    },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     createdAt: {
       type: Date,
       default: Date.now,

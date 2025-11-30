@@ -7,6 +7,8 @@ import exchangeService from "../../services/exchangeService";
 import MessageInput from "./MessageInput";
 import ExchangeWidget from "./ExchangeWidget";
 import ExchangeRequestModal from "./ExchangeRequestModal";
+import { Avatar } from "../common";
+import { getFileUrl } from "../../constants";
 import { format } from "../../lib/utils";
 import {
   Check,
@@ -16,6 +18,8 @@ import {
   X,
   ArrowLeft,
   Smile,
+  Trash2,
+  MoreVertical,
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -36,10 +40,12 @@ export default function ChatWindow({ chat, onBack }) {
   const [exchange, setExchange] = useState(null);
   const [isExchangeDismissed, setIsExchangeDismissed] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showMessageMenu, setShowMessageMenu] = useState(null);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const emojiPickerRef = useRef(null);
+  const messageMenuRef = useRef(null);
 
   const { user } = useAuth();
   const {
@@ -50,12 +56,10 @@ export default function ChatWindow({ chat, onBack }) {
     connectionStatus,
     reconnectAttempt,
     reactToMessage,
+    deleteMessage,
   } = useSocket();
 
   const currentUserId = user?.id || user?._id;
-  const API_URL =
-    import.meta.env.VITE_API_URL?.replace("/api", "") ||
-    "http://localhost:5000";
 
   const otherUser = chat?.participants?.find(
     (p) => p._id !== currentUserId && p.id !== currentUserId
@@ -264,6 +268,16 @@ export default function ChatWindow({ chat, onBack }) {
       );
     };
 
+    const handleMessageDeleted = ({ messageId }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? { ...m, isDeleted: true, deletedAt: new Date() }
+            : m
+        )
+      );
+    };
+
     socket.on("message:receive", handleReceive);
     socket.on("message:sent", handleReceive);
     socket.on("message:delivered", handleDelivered);
@@ -272,6 +286,7 @@ export default function ChatWindow({ chat, onBack }) {
     socket.on("typing:user", handleTyping);
     socket.on("chat:search:results", handleSearchResults);
     socket.on("message:reaction:update", handleReactionUpdate);
+    socket.on("message:deleted", handleMessageDeleted);
 
     return () => {
       socket.off("message:receive", handleReceive);
@@ -282,11 +297,12 @@ export default function ChatWindow({ chat, onBack }) {
       socket.off("typing:user", handleTyping);
       socket.off("chat:search:results", handleSearchResults);
       socket.off("message:reaction:update", handleReactionUpdate);
+      socket.off("message:deleted", handleMessageDeleted);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, chat?._id, currentUserId, searchQuery]);
 
-  // Close emoji picker when clicking outside
+  // Close emoji picker and message menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -294,6 +310,12 @@ export default function ChatWindow({ chat, onBack }) {
         !emojiPickerRef.current.contains(event.target)
       ) {
         setShowEmojiPicker(null);
+      }
+      if (
+        messageMenuRef.current &&
+        !messageMenuRef.current.contains(event.target)
+      ) {
+        setShowMessageMenu(null);
       }
     };
 
@@ -328,6 +350,13 @@ export default function ChatWindow({ chat, onBack }) {
     setShowEmojiPicker(null);
   };
 
+  const handleDeleteMessage = (messageId) => {
+    if (window.confirm("Are you sure you want to delete this message?")) {
+      deleteMessage(messageId);
+      setShowMessageMenu(null);
+    }
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim() && socket && chat) {
@@ -342,12 +371,6 @@ export default function ChatWindow({ chat, onBack }) {
     setSearchQuery("");
     setSearchResults([]);
     setShowSearch(false);
-  };
-
-  const getFileUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
-    return `${API_URL}${url}`;
   };
 
   const renderMessage = (message, index) => {
@@ -384,114 +407,197 @@ export default function ChatWindow({ chat, onBack }) {
         {!isMine && !showAvatar && <div className="w-8"></div>}
 
         <div
-          className={`flex flex-col max-w-[70%] ${
+          className={`flex flex-col max-w-[60%] ${
             isMine ? "items-end" : "items-start"
           }`}
         >
-          <div className="relative overflow-visible group">
-            <div
-              className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
-                isMine
-                  ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-br-none"
-                  : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
-              }`}
-            >
-              {/* Image Type */}
-              {message.messageType === "image" && (
-                <div className="max-w-xs mb-1 overflow-hidden rounded-lg max-h-80">
-                  <img
-                    src={getFileUrl(message.fileUrl)}
-                    alt="Sent image"
-                    className="object-contain w-full h-auto max-w-full cursor-pointer max-h-80 hover:opacity-90"
-                    onClick={() =>
-                      window.open(getFileUrl(message.fileUrl), "_blank")
-                    }
-                  />
+          <div
+            className={`relative flex items-center gap-2 overflow-visible group ${
+              !isMine ? "flex-row-reverse" : ""
+            }`}
+          >
+            {/* Action Buttons - Only show for non-deleted messages */}
+            {!message.isDeleted && (
+              <div className="flex gap-1">
+                {/* Reaction Button */}
+                <button
+                  onClick={() => setShowEmojiPicker(message._id)}
+                  className="flex-shrink-0 transition-opacity bg-white border border-gray-200 rounded-full opacity-0 group-hover:opacity-100 p-1.5 shadow-sm hover:bg-gray-50"
+                >
+                  <Smile size={14} className="text-gray-600" />
+                </button>
+
+                {/* Delete Button - Only for own messages */}
+                {isMine && (
+                  <button
+                    onClick={() => setShowMessageMenu(message._id)}
+                    className="flex-shrink-0 transition-opacity bg-white border border-gray-200 rounded-full opacity-0 group-hover:opacity-100 p-1.5 shadow-sm hover:bg-red-50"
+                  >
+                    <MoreVertical size={14} className="text-gray-600" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="relative flex-1">
+              {/* Message Menu - Delete option */}
+              {showMessageMenu === message._id && isMine && (
+                <div
+                  ref={messageMenuRef}
+                  className={`absolute ${
+                    isMine ? "left-0" : "right-0"
+                  } bottom-full mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 px-1 z-50 min-w-[120px]`}
+                >
+                  <button
+                    onClick={() => handleDeleteMessage(message._id)}
+                    className="flex items-center w-full gap-2 px-3 py-2 text-sm text-left text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
                 </div>
               )}
 
-              {/* File Type */}
-              {message.messageType === "file" && (
-                <a
-                  href={getFileUrl(message.fileUrl)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${
-                    isMine ? "bg-white/20" : "bg-gray-100 hover:bg-gray-200"
+              {/* Emoji Picker - Above message */}
+              {showEmojiPicker === message._id && !message.isDeleted && (
+                <div
+                  ref={emojiPickerRef}
+                  className={`absolute ${
+                    isMine ? "left-0" : "right-0"
+                  } bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 flex gap-1 z-50`}
+                >
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleReaction(message._id, emoji)}
+                      className="p-2 text-xl transition-transform rounded-lg hover:bg-gray-100 hover:scale-110"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Deleted Message State */}
+              {message.isDeleted ? (
+                <div
+                  className={`px-4 py-2 rounded-2xl text-sm shadow-sm italic ${
+                    isMine
+                      ? "bg-gray-200 text-gray-500"
+                      : "bg-gray-100 text-gray-400 border border-gray-200"
                   }`}
                 >
-                  <div className="p-1.5 bg-white rounded-full text-emerald-500">
-                    <FileText size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">
-                      {message.fileName || "Document"}
-                    </p>
-                    <p className="text-xs opacity-80">
-                      {(message.fileSize / 1024).toFixed(0)} KB
-                    </p>
-                  </div>
-                </a>
-              )}
+                  <p className="flex items-center gap-2">
+                    <Trash2 size={12} />
+                    This message was deleted
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Image Type - No bubble wrapper */}
+                  {message.messageType === "image" && (
+                    <div className="max-w-xs overflow-hidden shadow-sm rounded-2xl">
+                      <img
+                        src={getFileUrl(message.fileUrl)}
+                        alt="Sent image"
+                        className="object-cover w-full h-auto transition-opacity cursor-pointer max-h-80 hover:opacity-90"
+                        onClick={() =>
+                          window.open(getFileUrl(message.fileUrl), "_blank")
+                        }
+                      />
+                    </div>
+                  )}
 
-              {/* Text Content */}
-              {message.content && (
-                <p className="leading-relaxed break-words whitespace-pre-wrap">
-                  {message.content}
-                </p>
+                  {/* File Type */}
+                  {message.messageType === "file" && (
+                    <a
+                      href={getFileUrl(message.fileUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`flex items-center gap-2 mb-1 p-2 rounded-lg text-sm ${
+                        isMine
+                          ? "bg-gradient-to-r from-emerald-300 to-teal-400 hover:from-emerald-400 hover:to-teal-500 text-white"
+                          : "bg-gray-300 hover:bg-gray-400"
+                      }`}
+                    >
+                      <div className="p-1.5 bg-white rounded-full text-emerald-500">
+                        <FileText size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {message.fileName || "Document"}
+                        </p>
+                        <p className="text-xs opacity-80">
+                          {(message.fileSize / 1024).toFixed(0)} KB
+                        </p>
+                      </div>
+                    </a>
+                  )}
+
+                  {/* Text messages with bubble */}
+                  {message.messageType !== "image" &&
+                    message.messageType !== "file" && (
+                      <div
+                        className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
+                          isMine
+                            ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-br-none"
+                            : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+                        }`}
+                      >
+                        {/* Text Content */}
+                        {message.content && (
+                          <p className="leading-relaxed break-words whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                  {/* Display Reactions - Below message */}
+                  {message.reactions && message.reactions.length > 0 && (
+                    <div
+                      className={`flex flex-wrap gap-1 mt-1 ${
+                        isMine ? "justify-start" : "justify-end"
+                      }`}
+                    >
+                      {Object.entries(
+                        message.reactions.reduce((acc, r) => {
+                          const key = r.emoji;
+                          if (!acc[key]) {
+                            acc[key] = { count: 0, users: [] };
+                          }
+                          acc[key].count++;
+                          acc[key].users.push(r.user);
+                          return acc;
+                        }, {})
+                      ).map(([emoji, data]) => {
+                        const userReacted = data.users.includes(currentUserId);
+                        return (
+                          <button
+                            key={emoji}
+                            onClick={() => handleReaction(message._id, emoji)}
+                            className={`rounded-full px-2 py-0.5 text-base flex items-center gap-1 transition-colors ${
+                              userReacted
+                                ? "bg-blue-100 border border-blue-300"
+                                : "bg-gray-100 hover:bg-gray-200"
+                            }`}
+                          >
+                            <span>{emoji}</span>
+                            <span
+                              className={
+                                userReacted ? "text-blue-600" : "text-gray-600"
+                              }
+                            >
+                              {data.count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
-
-            {/* Reaction Button */}
-            <button
-              onClick={() => setShowEmojiPicker(message._id)}
-              className={`absolute ${
-                isMine ? "left-2" : "right-2"
-              } -bottom-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:bg-gray-50`}
-            >
-              <Smile size={14} className="text-gray-600" />
-            </button>
-
-            {/* Emoji Picker */}
-            {showEmojiPicker === message._id && (
-              <div
-                ref={emojiPickerRef}
-                className={`absolute ${
-                  isMine ? "left-0" : "right-0"
-                } -bottom-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-1 z-10`}
-              >
-                {QUICK_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleReaction(message._id, emoji)}
-                    className="p-1 text-lg rounded hover:bg-gray-100"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Display Reactions */}
-            {message.reactions && message.reactions.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1">
-                {Object.entries(
-                  message.reactions.reduce((acc, r) => {
-                    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                    return acc;
-                  }, {})
-                ).map(([emoji, count]) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleReaction(message._id, emoji)}
-                    className="bg-gray-100 rounded-full px-2 py-0.5 text-xs flex items-center gap-1 hover:bg-gray-200"
-                  >
-                    <span>{emoji}</span>
-                    <span className="text-gray-600">{count}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Timestamp & Status */}
@@ -559,24 +665,14 @@ export default function ChatWindow({ chat, onBack }) {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="relative">
-            <div className="w-10 h-10 overflow-hidden border border-white rounded-full shadow-sm bg-slate-200">
-              {otherUser?.avatar ? (
-                <img
-                  src={otherUser.avatar}
-                  className="object-cover w-full h-full"
-                  alt={otherUser?.username}
-                />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full font-bold text-slate-500">
-                  {otherUser?.username?.[0]}
-                </div>
-              )}
-            </div>
-            {isOnline && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-            )}
-          </div>
+          <Avatar
+            src={otherUser?.avatar}
+            alt={otherUser?.username}
+            fallback={otherUser?.username}
+            size="md"
+            showOnline
+            isOnline={isOnline}
+          />
           <div>
             <h3 className="font-bold text-gray-900">
               {otherUser?.fullName || otherUser?.username}
@@ -633,18 +729,21 @@ export default function ChatWindow({ chat, onBack }) {
             {searchResults.length > 1 ? "s" : ""}
           </p>
           <div className="space-y-1 overflow-y-auto max-h-32">
-            {searchResults.slice(0, 10).map((msg) => (
-              <button
-                key={msg._id}
-                onClick={() => scrollToMessage(msg._id)}
-                className="w-full p-2 text-xs text-left bg-white rounded hover:bg-gray-100"
-              >
-                <span className="font-medium">{msg.sender?.username}: </span>
-                <span className="text-gray-600">
-                  {msg.content?.substring(0, 50)}...
-                </span>
-              </button>
-            ))}
+            {searchResults
+              .slice(0, 10)
+              .reverse()
+              .map((msg) => (
+                <button
+                  key={msg._id}
+                  onClick={() => scrollToMessage(msg._id)}
+                  className="w-full p-2 text-xs text-left bg-white rounded hover:bg-gray-100"
+                >
+                  <span className="font-medium">{msg.sender?.username}: </span>
+                  <span className="text-gray-600">
+                    {msg.content?.substring(0, 50)}...
+                  </span>
+                </button>
+              ))}
           </div>
         </div>
       )}
@@ -657,7 +756,7 @@ export default function ChatWindow({ chat, onBack }) {
       >
         {/* Sticky Exchange Widget - Only show if this chat is related to a post */}
         {chat?.post && !isExchangeDismissed && (
-          <div className="sticky top-0 z-10 p-4 pb-0 bg-white">
+          <div className="sticky top-0 z-10 pb-0 bg-white">
             <ExchangeWidget
               post={chat.post}
               exchange={exchange}

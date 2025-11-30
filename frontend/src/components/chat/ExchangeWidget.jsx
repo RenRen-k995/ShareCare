@@ -246,7 +246,7 @@ export default function ExchangeWidget({
       {/* Peeler Toggle Button at Bottom Center */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute bottom-0 z-10 px-3 py-1 transition-all transform -translate-x-1/2 translate-y-1/2 rounded-full shadow-lg left-1/2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-200 hover:to-gray-300"
+        className="absolute bottom-0 z-10 px-3 pt-3 transition-all transform -translate-x-1/2 translate-y-1/2 rounded-full shadow-lg left-1/2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-200 hover:to-gray-300"
       >
         {isCollapsed ? (
           <ChevronDown className="w-4 h-4 text-gray-500" />

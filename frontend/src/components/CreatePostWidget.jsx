@@ -11,6 +11,8 @@ import {
 } from "./ui/select";
 import postService from "../services/postService";
 import CropModal from "./CropModal";
+import { Avatar, ErrorMessage } from "./common";
+import { CATEGORY_OPTIONS } from "../constants";
 
 export default function CreatePostWidget() {
   const { user } = useAuth();
@@ -117,9 +119,12 @@ export default function CreatePostWidget() {
       <div className="p-6 mb-4 bg-white shadow-sm rounded-2xl">
         <div className="flex items-start space-x-4">
           {/* User Avatar */}
-          <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 font-semibold text-white rounded-full bg-gradient-to-br from-blue-400 to-indigo-500">
-            {user?.username?.charAt(0).toUpperCase() || "U"}
-          </div>
+          <Avatar
+            src={user?.avatar}
+            alt={user?.username}
+            fallback={user?.username}
+            size="lg"
+          />
 
           {/* Input Area */}
           <div className="flex-1">
@@ -133,11 +138,7 @@ export default function CreatePostWidget() {
             ) : (
               <div className="space-y-4">
                 {/* Error Message */}
-                {error && (
-                  <div className="p-3 text-sm text-red-600 border border-red-100 rounded-lg bg-red-50">
-                    {error}
-                  </div>
-                )}
+                <ErrorMessage message={error} className="rounded-lg" />
 
                 {/* Cover Image Preview */}
                 {coverImagePreview && (
@@ -191,12 +192,11 @@ export default function CreatePostWidget() {
                         <SelectValue placeholder="Category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="items">Items (Donation)</SelectItem>
-                        <SelectItem value="knowledge">Knowledge</SelectItem>
-                        <SelectItem value="emotional-support">
-                          Emotional Support
-                        </SelectItem>
+                        {CATEGORY_OPTIONS.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
