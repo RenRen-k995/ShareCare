@@ -2,6 +2,11 @@
 
 ShareCare is a community platform where users can share items, knowledge, or emotional support with each other.
 
+## 📚 Documentation
+
+- [Database Schema](docs/DATABASE_SCHEMA.md) - Complete MongoDB schema documentation
+- [MVC Workflow](docs/MVC_WORKFLOW.md) - Architecture and request flow documentation
+
 ## Features
 
 ### Authentication
@@ -78,6 +83,15 @@ ShareCare is a community platform where users can share items, knowledge, or emo
   - Posts by category
   - Recent activity (last 7 days)
 
+### Exchange System
+
+- ✅ **Request Exchange**: Users can request items from post owners
+- ✅ **Exchange Workflow**: Full lifecycle tracking (requested → accepted → scheduled → completed)
+- ✅ **Meeting Details**: Schedule meeting time, location, and method (pickup/delivery/meet halfway)
+- ✅ **Status History**: Track all status changes with timestamps
+- ✅ **Mutual Ratings**: Both parties can rate each other after exchange
+- ✅ **Cancellation Handling**: Either party can cancel with reason tracking
+
 ## Tech Stack
 
 ### Backend
@@ -106,12 +120,13 @@ ShareCare/
 ├── backend/
 │   ├── src/
 │   │   ├── config/          # Database & Socket.IO configuration
-│   │   ├── models/          # Mongoose models (User, Post, Chat, Message, Comment, Report)
+│   │   ├── models/          # Mongoose models (User, Post, Chat, Message, Comment, Report, Exchange)
 │   │   ├── repositories/    # Data access layer
 │   │   ├── services/        # Business logic layer
 │   │   ├── controllers/     # Request handlers
 │   │   ├── routes/          # API routes
 │   │   ├── middleware/      # Auth, upload, error handling, rate limiting
+│   │   ├── utils/           # Utility functions
 │   │   └── server.js        # Entry point with Socket.IO
 │   ├── uploads/             # Uploaded files
 │   └── package.json
@@ -126,6 +141,9 @@ ShareCare/
 │   │   ├── lib/             # Utilities
 │   │   └── main.jsx         # Entry point
 │   └── package.json
+├── docs/
+│   ├── DATABASE_SCHEMA.md   # Database schema documentation
+│   └── MVC_WORKFLOW.md      # Architecture workflow documentation
 └── README.md
 ```
 
@@ -257,6 +275,15 @@ The application fully supports this workflow:
 
 - `POST /api/reports` - Create report (protected)
 - `GET /api/reports` - Get reports (admin)
+
+### Exchanges
+
+- `POST /api/exchanges` - Create exchange request (protected)
+- `GET /api/exchanges` - Get user's exchanges (protected)
+- `GET /api/exchanges/:id` - Get exchange details (protected)
+- `PATCH /api/exchanges/:id/status` - Update exchange status (protected)
+- `PATCH /api/exchanges/:id/meeting` - Update meeting details (protected)
+- `POST /api/exchanges/:id/rate` - Rate the exchange (protected)
 
 ### Admin
 
