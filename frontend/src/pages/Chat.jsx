@@ -17,24 +17,18 @@ export default function Chat() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. Add a Ref to track initialization status
-  // This prevents double-firing in React Strict Mode
-  const initializingRef = useRef(false);
+  const hasInitialized = useRef(false);
 
-  // Handle chat initialization (from URL or Contact button)
+  // Handle chat initialization from navigation or URL
   useEffect(() => {
     const initChat = async () => {
-      // Case 1: "Contact" button clicked (userId passed in navigation state)
-      if (location.state?.userId) {
-        // STOP if already initializing to prevent double API calls
-        if (initializingRef.current) return;
-        initializingRef.current = true;
+      // Case 1: Contact button navigation with userId
+      if (location.state?.userId && !hasInitialized.current) {
+        hasInitialized.current = true;
 
         try {
           setLoading(true);
           const { userId, postId } = location.state;
-
-          // API call to Find or Create Chat
           const data = await chatService.getOrCreateChat(userId, postId);
 
           if (data.chat) {
@@ -42,31 +36,27 @@ export default function Chat() {
             setShowChatWindow(true);
           }
 
-          // Clear navigation state immediately so this doesn't run again on refresh
-          // Use replace: true to replace the current history entry
+          // Clear state to prevent re-initialization
           navigate(location.pathname, { replace: true, state: null });
         } catch (error) {
           console.error("Failed to initialize chat:", error);
         } finally {
           setLoading(false);
-          // Optional: reset ref after a delay if needed, but usually not for this flow
-          setTimeout(() => {
-            initializingRef.current = false;
-          }, 1000);
         }
       }
-      // Case 2: chatId in URL param (e.g. shared link /chat?chatId=123)
+      // Case 2: Direct chat link with chatId parameter (includes refresh parameter)
       else if (searchParams.get("chatId")) {
+        // Always reload if chatId is different OR if refresh param is present
         const chatId = searchParams.get("chatId");
-        // Only load if not already selected
-        if (selectedChat?._id !== chatId) {
+        if (selectedChat?._id !== chatId || searchParams.get("refresh")) {
           loadChatById(chatId);
         }
       }
     };
 
     initChat();
-  }, [location.state, searchParams, navigate, selectedChat]); // Removed unstable dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, searchParams]);
 
   const loadChatById = async (chatId) => {
     try {

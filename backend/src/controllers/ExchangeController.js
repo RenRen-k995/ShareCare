@@ -37,6 +37,18 @@ class ExchangeController {
         req.user.id,
         note
       );
+
+      // Emit real-time update to both participants
+      const io = req.app.get("io");
+      if (io && exchange.chat) {
+        io.to(`chat:${exchange.chat}`).emit("exchange:updated", {
+          exchangeId: exchange._id,
+          exchange,
+          status,
+          updatedBy: req.user.id,
+        });
+      }
+
       res.json({ exchange });
     } catch (error) {
       next(error);
@@ -66,6 +78,18 @@ class ExchangeController {
         meetingDetails,
         req.user.id
       );
+
+      // Emit real-time update
+      const io = req.app.get("io");
+      if (io && exchange.chat) {
+        io.to(`chat:${exchange.chat}`).emit("exchange:updated", {
+          exchangeId: exchange._id,
+          exchange,
+          status: exchange.status,
+          updatedBy: req.user.id,
+        });
+      }
+
       res.json({ exchange });
     } catch (error) {
       next(error);

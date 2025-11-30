@@ -150,6 +150,12 @@ export const initializeSocket = (httpServer) => {
             unreadCount: chat.unreadCount.get(recipientId) || 0,
           });
 
+          // Send to sender so they see their own message immediately
+          socket.emit("message:sent", {
+            message: message.toObject(),
+            chatId,
+          });
+
           // Send delivery confirmation to sender
           socket.emit("message:delivered", {
             messageId: message._id,

@@ -61,6 +61,10 @@ export default function PostDetail() {
   }, [id]);
 
   useEffect(() => {
+    console.log("showRequestModal changed to:", showRequestModal);
+  }, [showRequestModal]);
+
+  useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         // Show sticky footer ONLY when the main comment input is NOT visible
@@ -178,25 +182,41 @@ export default function PostDetail() {
 
   const handleExchangeRequest = async (message) => {
     try {
+      // Ensure message is never empty - use default if needed
+      const defaultMessage = `Hi! I'm interested in "${post.title}". Is it still available?`;
+      const finalMessage = message && message.trim() ? message : defaultMessage;
+
+      console.log("1. Starting exchange request with message:", finalMessage);
+
       // 1. Get or Create Chat Room
       const chatData = await chatService.getOrCreateChat(
         post.author._id,
         post._id
       );
       const chatId = chatData.chat._id;
+      console.log("2. Chat created/retrieved:", chatId);
 
-      // 2. Create Exchange Request
-      await exchangeService.createExchange(chatId, post._id);
+      // 2. Create Exchange Request FIRST
+      const exchangeData = await exchangeService.createExchange(
+        chatId,
+        post._id
+      );
+      console.log("3. Exchange created:", exchangeData);
 
-      // 3. Send the optional message if provided
-      if (message && message.trim()) {
-        await chatService.sendMessage(chatId, message);
-      }
+      // 3. Send the message
+      const messageResponse = await chatService.sendMessage(
+        chatId,
+        finalMessage
+      );
+      console.log("4. Message sent successfully:", messageResponse);
 
-      // 4. Navigate to Chat
-      navigate("/chat", {
-        state: { userId: post.author._id, postId: post._id },
-      });
+      // 4. Wait longer for message to be saved in database (2 seconds)
+      console.log("5. Waiting 2 seconds for DB sync...");
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // 5. Navigate with timestamp to force fresh load
+      console.log("6. Navigating to chat...");
+      navigate(`/chat?chatId=${chatId}&refresh=${Date.now()}`);
     } catch (error) {
       console.error("Failed to create exchange request:", error);
       alert("Failed to send request. Please try again.");
@@ -267,7 +287,7 @@ export default function PostDetail() {
                 post.author?._id !== user.id && (
                   <button
                     onClick={handleContactToReceive}
-                    className="flex items-center px-6 py-2 text-xs font-semibold text-white transition-all bg-black rounded-full shadow-md hover:bg-gray-800 hover:shadow-lg"
+                    className="flex items-center gap-2 px-6 py-2 text-xs font-semibold text-white transition-all bg-black rounded-full shadow-md hover:bg-gray-800 hover:shadow-lg"
                   >
                     <Send className="w-4 h-4" />
                     <span>Contact</span>
@@ -574,8 +594,8 @@ export default function PostDetail() {
       {/* Exchange Request Modal */}
       {showRequestModal && post && (
         <ExchangeRequestModal
+          isOpen={showRequestModal}
           post={post}
-          isOffer={false}
           onClose={() => setShowRequestModal(false)}
           onConfirm={handleExchangeRequest}
         />

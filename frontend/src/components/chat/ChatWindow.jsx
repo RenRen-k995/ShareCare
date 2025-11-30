@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useSocket } from "../../contexts/SocketContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { chatService } from "../../services/chatService";
@@ -6,8 +7,6 @@ import exchangeService from "../../services/exchangeService";
 import MessageInput from "./MessageInput";
 import ExchangeWidget from "./ExchangeWidget";
 import ExchangeRequestModal from "./ExchangeRequestModal";
-import MeetingScheduler from "./MeetingScheduler";
-import RatingModal from "./RatingModal";
 import { format } from "../../lib/utils";
 import {
   Check,
@@ -24,6 +23,7 @@ import { Button } from "../ui/button";
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 export default function ChatWindow({ chat, onBack }) {
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -34,8 +34,7 @@ export default function ChatWindow({ chat, onBack }) {
   const [searchResults, setSearchResults] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(null);
   const [exchange, setExchange] = useState(null);
-  const [showScheduler, setShowScheduler] = useState(false);
-  const [showRating, setShowRating] = useState(false);
+  const [isExchangeDismissed, setIsExchangeDismissed] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
 
   const messagesEndRef = useRef(null);
@@ -63,12 +62,9 @@ export default function ChatWindow({ chat, onBack }) {
   );
   const isOnline = otherUser && onlineUsers.has(otherUser._id || otherUser.id);
 
-  // Check if current user is the post owner (offering) or not (requesting)
-  const isPostOwner =
-    chat?.post?.creator?._id === currentUserId ||
-    chat?.post?.creator === currentUserId;
-
   const handleCreateExchangeRequest = async (message) => {
+    if (!chat) return;
+
     try {
       const data = await exchangeService.createExchange(
         chat._id,
@@ -102,12 +98,16 @@ export default function ChatWindow({ chat, onBack }) {
       if (!chat?._id) return;
       try {
         if (reset) setLoading(true);
+        console.log(
+          `Loading messages for chat ${chat._id}, page ${pageNum}...`
+        );
         const response = await chatService.getChatMessages(chat._id, {
           page: pageNum,
           limit: 20,
         });
 
         const newMessages = response.messages || [];
+        console.log(`Loaded ${newMessages.length} messages:`, newMessages);
         if (reset) {
           setMessages(newMessages.reverse());
           setTimeout(() => {
@@ -158,9 +158,39 @@ export default function ChatWindow({ chat, onBack }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chat?._id, loadMessages]);
 
+  // Reload messages when refresh parameter changes (from new exchange request)
+  useEffect(() => {
+    const refreshParam = searchParams.get("refresh");
+    if (refreshParam && chat?._id) {
+      // Reload both messages AND exchange data when refresh parameter is present
+      const timer = setTimeout(() => {
+        console.log(
+          "Refreshing messages due to refresh parameter (after 1s delay)..."
+        );
+        loadMessages(1, true);
+
+        // Also reload exchange data to get the newly created exchange
+        exchangeService
+          .getExchangeByChat(chat._id)
+          .then((data) => {
+            console.log("Reloaded exchange data:", data.exchange);
+            setExchange(data.exchange);
+          })
+          .catch((err) => console.error("Failed to reload exchange", err));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get("refresh"), chat?._id]);
+
+  // Reset dismissal when chat changes
+  useEffect(() => {
+    setIsExchangeDismissed(false);
+  }, [chat?._id]);
+
   // Socket Event Listeners
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !chat) return;
 
     const handleReceive = ({ message, chatId }) => {
       if (chatId === chat._id) {
@@ -169,7 +199,8 @@ export default function ChatWindow({ chat, onBack }) {
           return [...prev, message];
         });
         markChatAsRead(chatId);
-        scrollToBottom();
+        // Auto-scroll to bottom when receiving new message
+        setTimeout(() => scrollToBottom(), 100);
       }
     };
 
@@ -299,7 +330,7 @@ export default function ChatWindow({ chat, onBack }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim() && socket) {
+    if (searchQuery.trim() && socket && chat) {
       socket.emit("chat:search", {
         query: searchQuery.trim(),
         chatId: chat._id,
@@ -620,48 +651,47 @@ export default function ChatWindow({ chat, onBack }) {
 
       {/* Messages Area */}
       <div
-        className="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar"
+        className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar"
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
-        {/* Only show if this chat is related to a post */}
-        {chat?.post && (
-          <div className="mb-4">
+        {/* Sticky Exchange Widget - Only show if this chat is related to a post */}
+        {chat?.post && !isExchangeDismissed && (
+          <div className="sticky top-0 z-10 p-4 pb-0 bg-white">
             <ExchangeWidget
-              chatId={chat._id}
-              post={chat.post} // Ensure chat object from backend populates 'post'
+              post={chat.post}
               exchange={exchange}
               onExchangeUpdate={setExchange}
-              onSchedule={() => setShowScheduler(true)}
-              onRate={() => setShowRating(true)}
               onRequestExchange={() => setShowRequestModal(true)}
             />
           </div>
         )}
 
-        {loading && (
-          <div className="py-4 text-xs text-center text-gray-400">
-            Loading history...
-          </div>
-        )}
-
-        {/* Messages List */}
-        <div className="space-y-2">
-          {messages.map((msg, i) => renderMessage(msg, i))}
-        </div>
-
-        {/* Typing Indicator */}
-        {typingUsers.size > 0 && (
-          <div className="flex items-center gap-2 mt-2 ml-10 text-xs italic text-gray-400">
-            <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
-              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
-              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+        <div className="p-4">
+          {loading && (
+            <div className="py-4 text-xs text-center text-gray-400">
+              Loading history...
             </div>
-            Typing...
+          )}
+
+          {/* Messages List */}
+          <div className="space-y-2">
+            {messages.map((msg, i) => renderMessage(msg, i))}
           </div>
-        )}
-        <div ref={messagesEndRef} />
+
+          {/* Typing Indicator */}
+          {typingUsers.size > 0 && (
+            <div className="flex items-center gap-2 mt-2 ml-10 text-xs italic text-gray-400">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+              </div>
+              Typing...
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input Area */}
@@ -669,35 +699,13 @@ export default function ChatWindow({ chat, onBack }) {
         <MessageInput chatId={chat._id} onMessageSent={scrollToBottom} />
       </div>
 
-      {/* Modals */}
+      {/* Exchange Request Modal */}
       {showRequestModal && chat.post && (
         <ExchangeRequestModal
+          isOpen={showRequestModal}
           post={chat.post}
-          isOffer={isPostOwner}
           onClose={() => setShowRequestModal(false)}
           onConfirm={handleCreateExchangeRequest}
-        />
-      )}
-
-      {showScheduler && exchange && (
-        <MeetingScheduler
-          exchange={exchange}
-          onClose={() => setShowScheduler(false)}
-          onScheduled={() => {
-            setShowScheduler(false);
-            // Reload exchange widget
-          }}
-        />
-      )}
-
-      {showRating && exchange && (
-        <RatingModal
-          exchange={exchange}
-          onClose={() => setShowRating(false)}
-          onRated={() => {
-            setShowRating(false);
-            // Reload exchange widget
-          }}
         />
       )}
     </div>

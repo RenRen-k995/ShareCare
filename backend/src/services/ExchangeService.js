@@ -16,30 +16,24 @@ class ExchangeService {
     if (!post) throw new Error("Post not found");
 
     // 3. Determine Giver and Receiver
-    // The post author is always the Giver
+    // The post author is always the Giver (they own the item)
     const giverId = post.author.toString();
-    // The other person in the chat (requester) is the Receiver
-    // (Unless the owner is offering it, but usually the logic is: Owner gives, Other receives)
 
-    // Validation: A user shouldn't request their own item
-    if (giverId === requesterId) {
-      // If the owner initiates, they are still the giver, and the other chat participant is receiver
-      // We need to find the other participant
-      const otherParticipant = chat.participants.find(
-        (p) => p.toString() !== requesterId
-      );
-      if (!otherParticipant) throw new Error("Cannot determine receiver");
+    // Find the other participant (the one who wants to receive the item)
+    const otherParticipant = chat.participants.find(
+      (p) => p.toString() !== giverId
+    );
+    if (!otherParticipant) throw new Error("Cannot determine receiver");
 
-      return await this._createExchange(
-        chatId,
-        postId,
-        requesterId,
-        otherParticipant.toString()
-      );
-    } else {
-      // Standard case: Requester wants the item
-      return await this._createExchange(chatId, postId, giverId, requesterId);
+    const receiverId = otherParticipant.toString();
+
+    // Validation: Ensure requester is authorized (can be either party)
+    if (requesterId !== giverId && requesterId !== receiverId) {
+      throw new Error("Unauthorized: You are not part of this exchange");
     }
+
+    // Standard case: Giver owns the item, Receiver wants it
+    return await this._createExchange(chatId, postId, giverId, receiverId);
   }
 
   async _createExchange(chatId, postId, giverId, receiverId) {
@@ -48,9 +42,10 @@ class ExchangeService {
     if (
       existing &&
       existing.status !== "cancelled" &&
-      existing.status !== "declined"
+      existing.status !== "declined" &&
+      existing.status !== "completed"
     ) {
-      return existing; // Return existing active exchange
+      return existing; // Return existing active exchange (only if not completed)
     }
 
     const exchangeData = {
@@ -84,12 +79,10 @@ class ExchangeService {
       throw new Error("Unauthorized action");
     }
 
-    // State Machine Validation
+    // Simplified 2-state flow: requested → accepted → completed
     const validTransitions = {
       requested: ["accepted", "declined", "cancelled"],
-      accepted: ["scheduled", "cancelled"], // Must schedule before in_progress
-      scheduled: ["in_progress", "cancelled", "scheduled"], // Can reschedule
-      in_progress: ["completed", "cancelled"],
+      accepted: ["completed", "cancelled"],
       completed: [],
       cancelled: [],
       declined: [],
@@ -131,33 +124,6 @@ class ExchangeService {
       exchangeId,
       meetingDetails
     );
-  }
-
-  async rateExchange(exchangeId, userId, score, feedback) {
-    const exchange = await ExchangeRepository.findById(exchangeId);
-    if (!exchange) throw new Error("Exchange not found");
-
-    if (exchange.status !== "completed") {
-      throw new Error("Cannot rate an incomplete exchange");
-    }
-
-    const isGiver = exchange.giver._id.toString() === userId;
-    const isReceiver = exchange.receiver._id.toString() === userId;
-
-    if (!isGiver && !isReceiver) {
-      throw new Error("Unauthorized");
-    }
-
-    // Check if already rated
-    if (isGiver && exchange.rating?.giverRating) {
-      throw new Error("You have already rated this exchange");
-    }
-    if (isReceiver && exchange.rating?.receiverRating) {
-      throw new Error("You have already rated this exchange");
-    }
-
-    const ratingData = { score, feedback };
-    return await ExchangeRepository.addRating(exchangeId, isGiver, ratingData);
   }
 
   async cancelExchange(exchangeId, userId, reason) {

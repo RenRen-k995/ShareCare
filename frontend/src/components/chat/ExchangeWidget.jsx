@@ -1,310 +1,259 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSocket } from "../../contexts/SocketContext";
 import { useAuth } from "../../contexts/AuthContext";
 import exchangeService from "../../services/exchangeService";
 import {
-  CheckCircle,
+  Check,
+  X,
   Clock,
-  Calendar,
-  MapPin,
+  MessageCircle,
+  CheckCircle2,
   Package,
-  XCircle,
-  Star,
-  AlertCircle,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-
-const STATUS_CONFIG = {
-  requested: {
-    label: "Request Sent",
-    color: "bg-blue-100 text-blue-800 border-blue-200",
-    icon: Clock,
-  },
-  accepted: {
-    label: "Accepted",
-    color: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    icon: CheckCircle,
-  },
-  scheduled: {
-    label: "Meeting Scheduled",
-    color: "bg-purple-100 text-purple-800 border-purple-200",
-    icon: Calendar,
-  },
-  in_progress: {
-    label: "In Progress",
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    icon: Package,
-  },
-  completed: {
-    label: "Completed",
-    color: "bg-gray-100 text-gray-800 border-gray-200",
-    icon: CheckCircle,
-  },
-  cancelled: {
-    label: "Cancelled",
-    color: "bg-red-50 text-red-800 border-red-200",
-    icon: XCircle,
-  },
-  declined: {
-    label: "Declined",
-    color: "bg-gray-100 text-gray-800 border-gray-200",
-    icon: XCircle,
-  },
-};
 
 export default function ExchangeWidget({
-  chatId,
   post,
-  // Allow passing existing exchange data
   exchange: initialExchange,
-  onSchedule,
-  onRate,
   onExchangeUpdate,
   onRequestExchange,
 }) {
   const [exchange, setExchange] = useState(initialExchange);
-  const [loading, setLoading] = useState(!initialExchange);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { socket } = useSocket();
   const { user } = useAuth();
 
   const currentUserId = user?.id || user?._id;
-  const isPostOwner =
-    post?.creator?._id === currentUserId || post?.creator === currentUserId;
-  const isGiver = exchange?.giver?._id === currentUserId;
-  const isReceiver = exchange?.receiver?._id === currentUserId; // eslint-disable-line no-unused-vars
-  const canRequest = !isPostOwner;
+
+  // Determine role from exchange data
+  const isGiver = exchange
+    ? exchange.giver?._id === currentUserId || exchange.giver === currentUserId
+    : post?.author?._id === currentUserId || post?.author === currentUserId;
+  const isReceiver = !isGiver;
 
   // Update local state if prop changes
   useEffect(() => {
-    if (initialExchange) {
-      setExchange(initialExchange);
-      setLoading(false);
-    }
+    setExchange(initialExchange);
   }, [initialExchange]);
 
-  const loadExchange = useCallback(async () => {
-    if (initialExchange) return; // Skip if we have data via props
-    try {
-      setLoading(true);
-      const data = await exchangeService.getExchangeByChat(chatId);
-      setExchange(data.exchange);
-    } catch (error) {
-      console.error("Error loading exchange:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [chatId, initialExchange]);
-
+  // Socket listener for real-time updates
   useEffect(() => {
-    loadExchange();
-  }, [loadExchange]);
+    if (!socket || !exchange) return;
 
-  // Socket listener
-  useEffect(() => {
-    if (!socket) return;
-    const handleStatusChange = ({ exchangeId, status }) => {
-      if (exchange && exchangeId === exchange._id) {
-        const updated = { ...exchange, status };
+    const handleExchangeUpdate = (data) => {
+      if (
+        data.exchangeId === exchange._id ||
+        data.exchange?._id === exchange._id
+      ) {
+        const updated = data.exchange || { ...exchange, ...data };
         setExchange(updated);
         if (onExchangeUpdate) onExchangeUpdate(updated);
+
+        // Auto-dismiss on completion after 3 seconds
+        if (updated.status === "completed") {
+          setTimeout(() => {
+            if (onExchangeUpdate) onExchangeUpdate(null);
+          }, 3000);
+        }
       }
     };
-    socket.on("exchange:status_changed", handleStatusChange);
-    return () => socket.off("exchange:status_changed", handleStatusChange);
+
+    socket.on("exchange:status_changed", handleExchangeUpdate);
+    socket.on("exchange:updated", handleExchangeUpdate);
+
+    return () => {
+      socket.off("exchange:status_changed", handleExchangeUpdate);
+      socket.off("exchange:updated", handleExchangeUpdate);
+    };
   }, [socket, exchange, onExchangeUpdate]);
 
-  const handleStatusUpdate = async (status, note) => {
+  const handleStatusUpdate = async (status) => {
     try {
-      await exchangeService.updateStatus(exchange._id, status, note);
-      const updatedExchange = { ...exchange, status };
-      setExchange(updatedExchange);
-      if (onExchangeUpdate) onExchangeUpdate(updatedExchange);
-      socket?.emit("exchange:update", {
-        exchangeId: exchange._id,
-        status,
-        note,
-      });
+      const response = await exchangeService.updateStatus(exchange._id, status);
+      const updated = response.exchange;
+      setExchange(updated);
+      if (onExchangeUpdate) onExchangeUpdate(updated);
     } catch (error) {
       console.error("Error updating status:", error);
+      alert(error.response?.data?.message || "Failed to update status");
     }
   };
 
-  if (loading) return null;
+  // --- RENDER STATES ---
 
-  // 1. No Active Exchange
+  // No exchange yet - show request button for receiver
   if (!exchange) {
-    if (!canRequest) {
+    if (isReceiver && post.status === "available") {
       return (
-        <div className="p-3 mb-4 border border-blue-100 bg-blue-50/50 rounded-2xl">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-100 rounded-full">
-                <Package className="w-4 h-4 text-blue-600" />
+        <div className="relative mb-3 border border-blue-200 rounded-lg bg-blue-50">
+          {/* Content with slide animation */}
+          <div
+            className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              isCollapsed ? "max-h-0" : "max-h-96"
+            }`}
+          >
+            <div className="flex items-center justify-between p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                  <MessageCircle className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-blue-900">
+                    Request this item
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    Send a message to the owner
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900">Offer Item?</p>
-                <p className="text-xs text-gray-500">
-                  Propose giving this item.
-                </p>
-              </div>
+              <Button
+                size="sm"
+                onClick={onRequestExchange}
+                className="px-4 text-xs font-semibold text-white bg-blue-600 rounded-lg h-9 hover:bg-blue-700"
+              >
+                Send Request
+              </Button>
             </div>
-            <Button
-              onClick={onRequestExchange}
-              size="sm"
-              className="text-xs text-white bg-blue-600 rounded-full hover:bg-blue-700"
-            >
-              Offer Item
-            </Button>
           </div>
+
+          {/* Peeler Toggle Button at Bottom Center */}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="absolute bottom-0 z-10 px-3 py-1 transition-all transform -translate-x-1/2 translate-y-1/2 bg-blue-600 rounded-full shadow-lg left-1/2 hover:bg-blue-700"
+          >
+            {isCollapsed ? (
+              <ChevronDown className="w-4 h-4 text-white" />
+            ) : (
+              <ChevronUp className="w-4 h-4 text-white" />
+            )}
+          </button>
         </div>
       );
     }
-    return (
-      <div className="p-3 mb-4 border border-emerald-100 bg-emerald-50/50 rounded-2xl">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-emerald-100 rounded-full">
-              <Package className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-900">Interested?</p>
-              <p className="text-xs text-gray-500">
-                Request to coordinate exchange
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={onRequestExchange}
-            size="sm"
-            className="text-xs text-white rounded-full bg-emerald-600 hover:bg-emerald-700"
-          >
-            Request Item
-          </Button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
-  const statusConfig =
-    STATUS_CONFIG[exchange.status] || STATUS_CONFIG.requested;
-  const StatusIcon = statusConfig.icon;
+  // Auto-dismiss declined/cancelled/completed exchanges
+  if (["declined", "cancelled", "completed"].includes(exchange?.status)) {
+    return null;
+  }
 
-  // 2. Active Exchange UI
+  // --- ACTIVE EXCHANGE STATES ---
   return (
-    <div className="mb-4 overflow-hidden bg-white border shadow-sm border-slate-100 rounded-2xl">
-      {/* Header */}
-      <div className="flex items-start justify-between p-3 border-b bg-slate-50/50 border-slate-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 overflow-hidden bg-white border border-gray-100 rounded-lg">
-            <img
-              src={post.image || post.images?.[0] || "/vite.svg"}
-              alt=""
-              className="object-cover w-full h-full"
-            />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-gray-900">{post.title}</h3>
-            <Badge className={`mt-0.5 font-normal ${statusConfig.color}`}>
-              {statusConfig.label}
-            </Badge>
-          </div>
-        </div>
-        <Badge
-          variant="outline"
-          className="text-[10px] text-gray-400 border-gray-200"
-        >
-          {isGiver ? "GIVING" : "RECEIVING"}
-        </Badge>
-      </div>
-
-      <div className="p-3 space-y-3">
-        {/* Meeting Details */}
-        {exchange.meetingDetails && exchange.status !== "cancelled" && (
-          <div className="p-3 space-y-1 border border-purple-100 bg-purple-50 rounded-xl">
-            <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
-              <Calendar className="w-3.5 h-3.5" />
-              Meeting Details
-            </div>
-            <div className="text-xs text-purple-700 pl-5.5 space-y-0.5">
-              <div>
-                {new Date(exchange.meetingDetails.scheduledTime).toLocaleString(
-                  [],
-                  { dateStyle: "medium", timeStyle: "short" }
-                )}
-              </div>
-              <div className="truncate">
-                {exchange.meetingDetails.location?.address}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          {exchange.status === "requested" && isGiver && (
+    <div className="relative mb-3 border border-gray-200 shadow-sm rounded-xl bg-gradient-to-br from-white to-gray-50">
+      {/* Content Area with slide animation */}
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          isCollapsed ? "max-h-0" : "max-h-[500px]"
+        }`}
+      >
+        <div className="p-4">
+          {/* STATE 1: PENDING - Awaiting Giver's Response */}
+          {exchange.status === "requested" && (
             <>
-              <Button
-                size="sm"
-                onClick={() => handleStatusUpdate("accepted")}
-                className="flex-1 h-8 text-xs text-white rounded-full bg-emerald-500 hover:bg-emerald-600"
-              >
-                Accept
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleStatusUpdate("declined")}
-                className="flex-1 h-8 text-xs text-red-500 border-red-100 rounded-full hover:bg-red-50"
-              >
-                Decline
-              </Button>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-full bg-amber-100">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="mb-1 text-sm font-semibold text-gray-900">
+                    {isGiver ? "New request received" : "Request sent"}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {isGiver
+                      ? `${
+                          exchange.receiver?.username || "Someone"
+                        } wants this item`
+                      : "Waiting for the owner to respond"}
+                  </p>
+                </div>
+              </div>
+
+              {isGiver && (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleStatusUpdate("accepted")}
+                    className="flex-1 h-10 text-sm font-semibold text-white rounded-lg shadow-sm bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Accept Request
+                  </Button>
+                  <Button
+                    onClick={() => handleStatusUpdate("declined")}
+                    variant="outline"
+                    className="h-10 px-4 text-sm font-semibold text-red-600 border-red-200 rounded-lg hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+
+              {isReceiver && (
+                <div className="px-3 py-2 border rounded-lg bg-amber-50 border-amber-200">
+                  <p className="text-xs text-center text-amber-700">
+                    💬 Coordinate pickup details in the chat below
+                  </p>
+                </div>
+              )}
             </>
           )}
 
+          {/* STATE 2: ACCEPTED - Coordinate via Chat */}
           {exchange.status === "accepted" && (
-            <Button
-              size="sm"
-              onClick={onSchedule}
-              className="w-full h-8 text-xs text-white bg-purple-500 rounded-full hover:bg-purple-600"
-            >
-              <Calendar className="w-3.5 h-3.5 mr-1.5" /> Schedule Meeting
-            </Button>
-          )}
+            <>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="mb-1 text-sm font-semibold text-emerald-900">
+                    Request accepted!
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Coordinate pickup time and location in the chat
+                  </p>
+                </div>
+              </div>
 
-          {exchange.status === "scheduled" && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusUpdate("in_progress")}
-              className="w-full h-8 text-xs text-white bg-blue-500 rounded-full hover:bg-blue-600"
-            >
-              Confirm Meeting Started
-            </Button>
-          )}
+              <div className="p-3 mb-3 border rounded-lg bg-emerald-50 border-emerald-200">
+                <div className="flex items-start gap-2 text-xs text-emerald-800">
+                  <MessageCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <p>
+                    <span className="font-semibold">Next steps:</span> Use the
+                    chat to agree on when and where to meet for the exchange.
+                  </p>
+                </div>
+              </div>
 
-          {exchange.status === "in_progress" && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusUpdate("completed")}
-              className="w-full h-8 text-xs text-white rounded-full bg-emerald-600 hover:bg-emerald-700"
-            >
-              Mark as Completed
-            </Button>
-          )}
-
-          {exchange.status === "completed" &&
-            !exchange.rating?.[isGiver ? "giverRating" : "receiverRating"] && (
               <Button
-                size="sm"
-                variant="outline"
-                onClick={onRate}
-                className="w-full h-8 text-xs text-yellow-600 border-yellow-200 rounded-full hover:bg-yellow-50"
+                onClick={() => handleStatusUpdate("completed")}
+                className="w-full h-10 text-sm font-semibold text-white rounded-lg shadow-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
               >
-                <Star className="w-3.5 h-3.5 mr-1.5" /> Rate Experience
+                <Package className="w-4 h-4 mr-2" />
+                Mark as Completed
               </Button>
-            )}
+
+              <p className="mt-2 text-xs text-center text-gray-500">
+                Click after you've successfully exchanged the item
+              </p>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Peeler Toggle Button at Bottom Center */}
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute bottom-0 z-10 px-3 py-1 transition-all transform -translate-x-1/2 translate-y-1/2 rounded-full shadow-lg left-1/2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-200 hover:to-gray-300"
+      >
+        {isCollapsed ? (
+          <ChevronDown className="w-4 h-4 text-gray-500" />
+        ) : (
+          <ChevronUp className="w-4 h-4 text-gray-600" />
+        )}
+      </button>
     </div>
   );
 }
