@@ -14,9 +14,9 @@ class PostController {
 
       const postData = { title, description, category };
 
-      // Add image if uploaded
+      // Add image if uploaded (supports both local and Cloudinary storage)
       if (req.file) {
-        postData.image = `/uploads/${req.file.filename}`;
+        postData.image = req.file.cloudinaryUrl || `/uploads/${req.file.filename}`;
       }
 
       const post = await PostService.createPost(postData, req.user.id);
@@ -71,7 +71,7 @@ class PostController {
       if (status !== undefined) updateData.status = status;
 
       if (req.file) {
-        updateData.image = `/uploads/${req.file.filename}`;
+        updateData.image = req.file.cloudinaryUrl || `/uploads/${req.file.filename}`;
       }
 
       const post = await PostService.updatePost(
@@ -195,12 +195,18 @@ class PostController {
         return res.status(400).json({ message: "No image file provided" });
       }
 
-      const imageUrl = `/uploads/${req.file.filename}`;
-      const baseUrl = process.env.API_URL || "http://localhost:5000";
+      // Use Cloudinary URL if available, otherwise fallback to local URL
+      let imageUrl;
+      if (req.file.cloudinaryUrl) {
+        imageUrl = req.file.cloudinaryUrl;
+      } else {
+        const baseUrl = process.env.API_URL || "http://localhost:5000";
+        imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+      }
 
       res.status(200).json({
         message: "Image uploaded successfully",
-        imageUrl: `${baseUrl}${imageUrl}`,
+        imageUrl,
       });
     } catch (error) {
       next(error);
