@@ -35,12 +35,19 @@ const cloudinaryUpload = multer({
   },
 });
 
+// Helper function to generate unique suffix for file names
+const generateUniqueSuffix = () => {
+  return Date.now() + "-" + Math.round(Math.random() * 1e9);
+};
+
 // Helper function to upload buffer to Cloudinary
 const uploadToCloudinary = (buffer, options = {}) => {
   return new Promise((resolve, reject) => {
+    // Default folder is "sharecare", but can be overridden via options.folder
+    const folder = options.folder || "sharecare";
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: "sharecare",
+        folder,
         resource_type: "auto",
         ...options,
       },
@@ -57,27 +64,33 @@ const uploadToCloudinary = (buffer, options = {}) => {
   });
 };
 
-// Middleware to handle Cloudinary upload after multer processes the file
-const processCloudinaryUpload = async (req, res, next) => {
-  if (!req.file) {
-    return next();
-  }
+// Factory function to create a Cloudinary upload processor with an optional custom folder
+const createCloudinaryProcessor = (folder = "sharecare") => {
+  return async (req, res, next) => {
+    if (!req.file) {
+      return next();
+    }
 
-  try {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const result = await uploadToCloudinary(req.file.buffer, {
-      public_id: `${req.file.fieldname}-${uniqueSuffix}`,
-    });
+    try {
+      const uniqueSuffix = generateUniqueSuffix();
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder,
+        public_id: `${req.file.fieldname}-${uniqueSuffix}`,
+      });
 
-    // Replace file info with Cloudinary result
-    req.file.cloudinaryUrl = result.secure_url;
-    req.file.cloudinaryPublicId = result.public_id;
-    req.file.filename = result.public_id;
+      // Replace file info with Cloudinary result
+      req.file.cloudinaryUrl = result.secure_url;
+      req.file.cloudinaryPublicId = result.public_id;
+      req.file.filename = result.public_id;
 
-    next();
-  } catch (error) {
-    next(error);
-  }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
 };
 
-export { cloudinaryUpload, processCloudinaryUpload, uploadToCloudinary };
+// Default processor using the "sharecare" folder (for backwards compatibility)
+const processCloudinaryUpload = createCloudinaryProcessor("sharecare");
+
+export { cloudinaryUpload, processCloudinaryUpload, uploadToCloudinary, createCloudinaryProcessor, generateUniqueSuffix };
