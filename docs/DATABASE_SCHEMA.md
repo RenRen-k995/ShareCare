@@ -207,12 +207,14 @@ Stores user reports on posts.
 | `_id` | ObjectId | Auto | - | Unique identifier |
 | `post` | ObjectId | Yes | - | Reference to reported Post |
 | `reporter` | ObjectId | Yes | - | Reference to reporting User |
-| `reason` | String | Yes | "other" | Reason (spam/inappropriate/scam/harassment/other) |
+| `reason` | String | Yes* | "other" | Reason (spam/inappropriate/scam/harassment/other) |
 | `description` | String | No | - | Additional details (max 500 chars) |
 | `status` | String | No | "pending" | Status (pending/reviewed/resolved/dismissed) |
 | `reviewedBy` | ObjectId | No | - | Admin who reviewed |
 | `reviewNotes` | String | No | - | Admin notes (max 500 chars) |
 | `createdAt` | Date | No | Date.now | Creation timestamp |
+
+*Note: The `reason` field is required but has a default value of "other" which is used when no value is provided.
 
 **Indexes:**
 - Compound index on `status` and `createdAt`
