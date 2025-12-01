@@ -1,18 +1,28 @@
 # Database Schema
 
-This document describes the MongoDB database schema for the ShareCare application.
+This document describes the MongoDB database schema for the ShareCare application - a complete community platform for sharing items, knowledge, and emotional support.
 
 ## Overview
 
-ShareCare uses MongoDB with Mongoose ODM. The database consists of the following collections:
+ShareCare uses MongoDB with Mongoose ODM. The database architecture supports:
 
-- **Users** - User accounts and profiles (including admin users)
-- **Posts** - Shared items, knowledge, and emotional support posts
-- **Chats** - Chat conversations between users
-- **Messages** - Individual messages within chats
-- **Comments** - Comments on posts
-- **Reports** - User reports on posts
-- **Exchanges** - Item exchange tracking between users
+- **User Management** - Registration, authentication, profiles, and admin capabilities
+- **Content Management** - Posts, comments, and reactions
+- **Real-time Communication** - Chat and messaging system
+- **Moderation System** - Reports and admin review workflow
+- **Exchange Tracking** - Item donation lifecycle management
+
+### Collections Summary
+
+| Collection | Purpose | Key Features |
+|------------|---------|--------------|
+| **Users** | User accounts and profiles | Authentication, admin roles, ratings |
+| **Posts** | Shared content (items, knowledge, support) | Categories, status tracking, reactions |
+| **Comments** | User interactions on posts | Nested discussions, likes |
+| **Chats** | Conversation threads | Real-time messaging, unread counts |
+| **Messages** | Individual chat messages | File attachments, read receipts |
+| **Reports** | Content moderation | Admin review workflow |
+| **Exchanges** | Item donation tracking | Full lifecycle management |
 
 ---
 
@@ -44,61 +54,203 @@ After running the seed script or starting the server for the first time, a defau
 
 **⚠️ IMPORTANT: Change these credentials in production!**
 
+Configure via environment variables:
+```env
+ADMIN_EMAIL=your-admin@domain.com
+ADMIN_USERNAME=your-admin-username
+ADMIN_PASSWORD=YourSecurePassword123!
+```
+
 ### Auto-initialization
 
-When the server starts, it automatically checks if an admin user exists. If not, it creates the default admin user. This ensures the application always has at least one admin account.
+When the server starts, it automatically checks if an admin user exists. If not, it creates the default admin user. This ensures the application always has at least one admin account for moderation purposes.
 
 ---
 
 ## Entity Relationship Diagram
 
 ```
-┌─────────────┐       ┌─────────────┐       ┌─────────────┐
-│    User     │       │    Post     │       │   Comment   │
-├─────────────┤       ├─────────────┤       ├─────────────┤
-│ _id         │◄──────┤ author      │       │ _id         │
-│ username    │       │ _id         │◄──────┤ post        │
-│ email       │       │ title       │       │ author      │──────►│ User │
-│ password    │       │ description │       │ content     │
-│ fullName    │       │ category    │       │ likes[]     │
-│ avatar      │       │ status      │       │ createdAt   │
-│ bio         │       │ image       │       └─────────────┘
-│ gender      │       │ reactions[] │
-│ dateOfBirth │       │ viewCount   │       ┌─────────────┐
-│ rating      │       │ createdAt   │       │   Report    │
-│ ratingCount │       └─────────────┘       ├─────────────┤
-│ totalLikes  │              ▲              │ _id         │
-│ isAdmin     │              │              │ post        │──────►│ Post │
-│ isBlocked   │              │              │ reporter    │──────►│ User │
-│ createdAt   │       ┌──────┴──────┐       │ reason      │
-└─────────────┘       │             │       │ description │
-       ▲              │             │       │ status      │
-       │        ┌─────┴─────┐ ┌─────┴─────┐ │ reviewedBy  │
-       │        │   Chat    │ │ Exchange  │ │ createdAt   │
-       │        ├───────────┤ ├───────────┤ └─────────────┘
-       │        │ _id       │ │ _id       │
-       └────────┤participants│ │ chat      │──────►│ Chat │
-                │ lastMessage│ │ post      │──────►│ Post │
-                │ post      │ │ giver     │──────►│ User │
-                │ unreadCount│ │ receiver  │──────►│ User │
-                │ updatedAt │ │ status    │
-                └───────────┘ │ meeting   │
-                      │       │ rating    │
-                      ▼       └───────────┘
-                ┌───────────┐
-                │  Message  │
-                ├───────────┤
-                │ _id       │
-                │ chat      │──────►│ Chat │
-                │ sender    │──────►│ User │
-                │ content   │
-                │ messageType│
-                │ fileUrl   │
-                │ readBy[]  │
-                │ reactions[]│
-                │ isDelivered│
-                │ createdAt │
-                └───────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                              SHARECARE DATABASE SCHEMA                                    │
+│                           MongoDB + Mongoose ODM Architecture                             │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+
+                                    ┌─────────────────────┐
+                                    │        USER         │
+                                    │   (Central Entity)  │
+                                    ├─────────────────────┤
+                                    │ _id: ObjectId (PK)  │
+                                    │ username: String    │
+                                    │ email: String       │
+                                    │ password: String    │◄─── bcrypt hashed
+                                    │ fullName: String    │
+                                    │ avatar: String      │
+                                    │ bio: String         │
+                                    │ gender: Enum        │
+                                    │ dateOfBirth: Date   │
+                                    │ rating: Number      │◄─── 0-5 stars
+                                    │ ratingCount: Number │
+                                    │ totalLikes: Number  │
+                                    │ ╔═══════════════╗   │
+                                    │ ║ isAdmin: Bool ║   │◄─── ADMIN FLAG
+                                    │ ╚═══════════════╝   │
+                                    │ isBlocked: Boolean  │◄─── Account status
+                                    │ createdAt: Date     │
+                                    │ updatedAt: Date     │
+                                    └─────────┬───────────┘
+                                              │
+          ┌───────────────────────────────────┼───────────────────────────────────┐
+          │                                   │                                   │
+          ▼                                   ▼                                   ▼
+┌─────────────────────┐           ┌─────────────────────┐           ┌─────────────────────┐
+│        POST         │           │        CHAT         │           │       REPORT        │
+│   (Content Entity)  │           │  (Communication)    │           │   (Moderation)      │
+├─────────────────────┤           ├─────────────────────┤           ├─────────────────────┤
+│ _id: ObjectId (PK)  │           │ _id: ObjectId (PK)  │           │ _id: ObjectId (PK)  │
+│ title: String       │           │ participants: [User]│◄──────────│ post: ObjectId (FK) │──┐
+│ description: String │           │ lastMessage: Message│           │ reporter: User (FK) │  │
+│ category: Enum      │◄──┐       │ post: ObjectId (FK) │───────────│ reason: Enum        │  │
+│  - items            │   │       │ unreadCount: Map    │           │ description: String │  │
+│  - knowledge        │   │       │ updatedAt: Date     │           │ status: Enum        │  │
+│  - emotional-support│   │       │ createdAt: Date     │           │  - pending          │  │
+│  - other            │   │       └─────────┬───────────┘           │  - reviewed         │  │
+│ status: Enum        │   │                 │                       │  - resolved         │  │
+│  - available        │   │                 │ 1:N                   │  - dismissed        │  │
+│  - pending          │   │                 ▼                       │ ╔═════════════════╗ │  │
+│  - donated          │   │       ┌─────────────────────┐           │ ║ reviewedBy: User║ │◄─┼── ADMIN
+│  - closed           │   │       │      MESSAGE        │           │ ╚═════════════════╝ │  │   REVIEWS
+│ image: String       │   │       │  (Chat Messages)    │           │ reviewNotes: String │  │
+│ contentImages: []   │   │       ├─────────────────────┤           │ createdAt: Date     │  │
+│ author: User (FK)   │───┤       │ _id: ObjectId (PK)  │           └─────────────────────┘  │
+│ reactions: [{       │   │       │ chat: ObjectId (FK) │◄──┘                                │
+│   user: User,       │   │       │ sender: User (FK)   │                                    │
+│   type: Enum        │   │       │ content: String     │                                    │
+│ }]                  │   │       │ messageType: Enum   │                                    │
+│ viewCount: Number   │   │       │  - text             │                                    │
+│ viewedBy: [User]    │   │       │  - file             │                                    │
+│ createdAt: Date     │   │       │  - image            │                                    │
+│ updatedAt: Date     │   │       │ fileUrl: String     │                                    │
+└─────────┬───────────┘   │       │ fileName: String    │                                    │
+          │               │       │ fileSize: Number    │                                    │
+          │ 1:N           │       │ readBy: [{          │                                    │
+          ▼               │       │   user: User,       │                                    │
+┌─────────────────────┐   │       │   readAt: Date      │                                    │
+│      COMMENT        │   │       │ }]                  │                                    │
+│  (Post Interactions)│   │       │ reactions: [{       │                                    │
+├─────────────────────┤   │       │   user: User,       │                                    │
+│ _id: ObjectId (PK)  │   │       │   emoji: String     │                                    │
+│ post: ObjectId (FK) │───┘       │ }]                  │                                    │
+│ author: User (FK)   │           │ isDelivered: Bool   │                                    │
+│ content: String     │           │ deliveredAt: Date   │                                    │
+│ likes: [User]       │           │ isDeleted: Bool     │                                    │
+│ createdAt: Date     │           │ deletedAt: Date     │                                    │
+│ updatedAt: Date     │           │ deletedBy: User     │                                    │
+└─────────────────────┘           │ createdAt: Date     │                                    │
+                                  │ updatedAt: Date     │                                    │
+                                  └─────────────────────┘                                    │
+                                                                                             │
+┌────────────────────────────────────────────────────────────────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                      EXCHANGE                                               │
+│                            (Item Donation Lifecycle Tracking)                               │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ _id: ObjectId (PK)                                                                          │
+│ chat: ObjectId (FK) ──────► Chat                                                            │
+│ post: ObjectId (FK) ──────► Post                                                            │
+│ giver: ObjectId (FK) ─────► User (item owner)                                               │
+│ receiver: ObjectId (FK) ──► User (item recipient)                                           │
+│                                                                                             │
+│ status: Enum                          │ meetingDetails: {                                   │
+│  - requested  ──► Initial request     │   scheduledTime: Date                               │
+│  - accepted   ──► Giver approved      │   location: {                                       │
+│  - scheduled  ──► Meeting arranged    │     address: String                                 │
+│  - in_progress ─► Exchange ongoing    │     coordinates: { lat, lng }                       │
+│  - completed  ──► Success             │   }                                                 │
+│  - cancelled  ──► Cancelled           │   method: Enum (pickup/delivery/meet_halfway)       │
+│  - declined   ──► Giver rejected      │   notes: String                                     │
+│                                       │ }                                                   │
+│ statusHistory: [{                     │                                                     │
+│   status, timestamp, updatedBy, note  │ rating: {                                           │
+│ }]                                    │   giverRating: { score, feedback, ratedAt }         │
+│                                       │   receiverRating: { score, feedback, ratedAt }      │
+│ cancelledBy: User (FK)                │ }                                                   │
+│ cancelReason: String                  │                                                     │
+│ createdAt: Date                       │                                                     │
+│ updatedAt: Date                       │                                                     │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════════
+                                    LEGEND & RELATIONSHIPS
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+    ┌─────┐                           ┌─────┐
+    │  A  │──────────────────────────►│  B  │     A references B (Foreign Key)
+    └─────┘                           └─────┘
+
+    ┌─────┐                           ┌─────┐
+    │  A  │◄─────────────────────────►│  B  │     Bidirectional relationship
+    └─────┘                           └─────┘
+
+    ╔═════════════════╗
+    ║  Special Field  ║                           Admin-related field (highlighted)
+    ╚═════════════════╝
+
+    (PK) = Primary Key
+    (FK) = Foreign Key
+    1:N  = One-to-Many relationship
+    N:M  = Many-to-Many relationship
+
+═══════════════════════════════════════════════════════════════════════════════════════════════
+```
+
+---
+
+## Admin System
+
+### Admin Capabilities
+
+The admin user (`isAdmin: true`) has special privileges:
+
+| Feature | Description |
+|---------|-------------|
+| **Report Management** | View all reports, update status, add review notes |
+| **Post Moderation** | Hide or delete any post, change post status |
+| **User Management** | Block/unblock users, view all user data |
+| **Statistics Dashboard** | View platform analytics and metrics |
+| **Comment Moderation** | Delete inappropriate comments |
+
+### Admin Workflow
+
+```
+User Reports Post
+       │
+       ▼
+┌─────────────────┐
+│ Report Created  │
+│ status: pending │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────┐
+│        ADMIN REVIEWS REPORT         │
+│  - Reviews post content             │
+│  - Reviews report reason            │
+│  - Decides action                   │
+└────────┬────────────────────────────┘
+         │
+    ┌────┴────┬─────────────┬─────────────┐
+    │         │             │             │
+    ▼         ▼             ▼             ▼
+┌───────┐ ┌───────┐   ┌───────────┐ ┌─────────┐
+│Dismiss│ │Resolve│   │ Hide Post │ │ Delete  │
+│Report │ │Report │   │(status=   │ │  Post   │
+└───────┘ └───────┘   │ closed)   │ └─────────┘
+                      └───────────┘
+
+Optional: Block user if severe violation
 ```
 
 ---
@@ -107,7 +259,7 @@ When the server starts, it automatically checks if an admin user exists. If not,
 
 ### User
 
-Stores user account information and profiles.
+Stores user account information, profiles, and admin status.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
@@ -123,15 +275,20 @@ Stores user account information and profiles.
 | `rating` | Number | No | 0 | User rating (0-5) |
 | `ratingCount` | Number | No | 0 | Number of ratings received |
 | `totalLikes` | Number | No | 0 | Total likes received across all posts |
-| `isAdmin` | Boolean | No | false | Admin status |
-| `isBlocked` | Boolean | No | false | Blocked status |
+| `isAdmin` | Boolean | No | false | **Admin status - grants moderation privileges** |
+| `isBlocked` | Boolean | No | false | Blocked status - prevents login and actions |
 | `createdAt` | Date | No | Date.now | Account creation timestamp |
+| `updatedAt` | Date | Auto | - | Last update timestamp |
+
+**Indexes:**
+- Unique index on `username`
+- Unique index on `email`
 
 **Hooks:**
-- Pre-save: Passwords are hashed using bcrypt before saving
+- Pre-save: Passwords are hashed using bcrypt (10 salt rounds)
 
 **Methods:**
-- `comparePassword(candidatePassword)`: Validates password
+- `comparePassword(candidatePassword)`: Validates password against hash
 - `toPublicJSON()`: Returns safe user data without password
 
 ---
@@ -156,6 +313,23 @@ Stores shared items, knowledge, and emotional support posts.
 | `viewCount` | Number | No | 0 | Number of views |
 | `viewedBy` | [ObjectId] | No | [] | Users who viewed the post |
 | `createdAt` | Date | No | Date.now | Creation timestamp |
+| `updatedAt` | Date | Auto | - | Last update timestamp |
+
+**Category Values:**
+| Value | Description |
+|-------|-------------|
+| `items` | Physical items for donation |
+| `knowledge` | Educational content, tutorials, tips |
+| `emotional-support` | Mental health support, encouragement |
+| `other` | Miscellaneous content |
+
+**Status Values:**
+| Value | Description |
+|-------|-------------|
+| `available` | Post is active and accepting requests |
+| `pending` | Exchange in progress |
+| `donated` | Item successfully donated |
+| `closed` | Post closed (by user or admin) |
 
 **Indexes:**
 - Text index on `title` and `description` for search
@@ -170,11 +344,12 @@ Stores chat conversations between users.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `_id` | ObjectId | Auto | - | Unique identifier |
-| `participants` | [ObjectId] | Yes | - | Array of User references |
+| `participants` | [ObjectId] | Yes | - | Array of User references (2 users) |
 | `lastMessage` | ObjectId | No | - | Reference to last Message |
 | `post` | ObjectId | No | - | Reference to related Post |
-| `unreadCount` | Map<String, Number> | No | {} | Unread count per user |
+| `unreadCount` | Map<String, Number> | No | {} | Unread count per user ID |
 | `updatedAt` | Date | No | Date.now | Last update timestamp |
+| `createdAt` | Date | Auto | - | Creation timestamp |
 
 **Indexes:**
 - Compound index on `participants` and `updatedAt`
@@ -207,6 +382,7 @@ Stores individual messages within chats.
 | `deletedAt` | Date | No | - | Deletion timestamp |
 | `deletedBy` | ObjectId | No | - | User who deleted |
 | `createdAt` | Date | No | Date.now | Creation timestamp |
+| `updatedAt` | Date | Auto | - | Last update timestamp |
 
 **Indexes:**
 - Compound index on `chat` and `createdAt`
@@ -226,6 +402,7 @@ Stores comments on posts.
 | `content` | String | Yes | - | Comment text (max 1000 chars) |
 | `likes` | [ObjectId] | No | [] | Array of User references who liked |
 | `createdAt` | Date | No | Date.now | Creation timestamp |
+| `updatedAt` | Date | Auto | - | Last update timestamp |
 
 **Indexes:**
 - Compound index on `post` and `createdAt`
@@ -234,7 +411,7 @@ Stores comments on posts.
 
 ### Report
 
-Stores user reports on posts.
+Stores user reports on posts for admin moderation.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
@@ -244,11 +421,29 @@ Stores user reports on posts.
 | `reason` | String | Yes* | "other" | Reason (spam/inappropriate/scam/harassment/other) |
 | `description` | String | No | - | Additional details (max 500 chars) |
 | `status` | String | No | "pending" | Status (pending/reviewed/resolved/dismissed) |
-| `reviewedBy` | ObjectId | No | - | Admin who reviewed |
+| `reviewedBy` | ObjectId | No | - | **Admin who reviewed** |
 | `reviewNotes` | String | No | - | Admin notes (max 500 chars) |
 | `createdAt` | Date | No | Date.now | Creation timestamp |
+| `updatedAt` | Date | Auto | - | Last update timestamp |
 
 *Note: The `reason` field is required but has a default value of "other" which is used when no value is provided.
+
+**Report Reason Values:**
+| Value | Description |
+|-------|-------------|
+| `spam` | Unsolicited promotional content |
+| `inappropriate` | Offensive or inappropriate content |
+| `scam` | Fraudulent or deceptive content |
+| `harassment` | Targeting or harassing users |
+| `other` | Other violations |
+
+**Report Status Values:**
+| Value | Description |
+|-------|-------------|
+| `pending` | Awaiting admin review |
+| `reviewed` | Admin has seen the report |
+| `resolved` | Issue has been addressed |
+| `dismissed` | Report was invalid/unfounded |
 
 **Indexes:**
 - Compound index on `status` and `createdAt`
@@ -257,14 +452,14 @@ Stores user reports on posts.
 
 ### Exchange
 
-Tracks item exchanges between users.
+Tracks item exchanges between users with full lifecycle management.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `_id` | ObjectId | Auto | - | Unique identifier |
 | `chat` | ObjectId | Yes | - | Reference to Chat |
 | `post` | ObjectId | Yes | - | Reference to Post |
-| `giver` | ObjectId | Yes | - | Reference to giving User |
+| `giver` | ObjectId | Yes | - | Reference to giving User (post author) |
 | `receiver` | ObjectId | Yes | - | Reference to receiving User |
 | `status` | String | No | "requested" | Exchange status |
 | `meetingDetails` | Object | No | - | Meeting arrangement details |
@@ -280,15 +475,38 @@ Tracks item exchanges between users.
 | `rating.receiverRating` | Object | No | - | Rating from giver to receiver |
 | `cancelledBy` | ObjectId | No | - | User who cancelled |
 | `cancelReason` | String | No | - | Cancellation reason |
+| `createdAt` | Date | Auto | - | Creation timestamp |
+| `updatedAt` | Date | Auto | - | Last update timestamp |
 
 **Exchange Status Values:**
-- `requested` - Initial request sent
-- `accepted` - Giver accepted the request
-- `scheduled` - Meeting time/location set
-- `in_progress` - Item being exchanged
-- `completed` - Exchange successful
-- `cancelled` - Cancelled by either party
-- `declined` - Giver declined the request
+| Status | Description | Next States |
+|--------|-------------|-------------|
+| `requested` | Initial request sent | accepted, declined |
+| `accepted` | Giver accepted the request | scheduled, cancelled |
+| `scheduled` | Meeting time/location set | in_progress, cancelled |
+| `in_progress` | Item being exchanged | completed, cancelled |
+| `completed` | Exchange successful | (final) |
+| `cancelled` | Cancelled by either party | (final) |
+| `declined` | Giver declined the request | (final) |
+
+**Exchange Lifecycle Diagram:**
+```
+┌───────────┐     accept      ┌──────────┐    schedule    ┌───────────┐
+│ requested │────────────────►│ accepted │───────────────►│ scheduled │
+└─────┬─────┘                 └────┬─────┘                └─────┬─────┘
+      │                            │                            │
+      │ decline                    │ cancel                     │ start
+      ▼                            ▼                            ▼
+┌──────────┐                 ┌───────────┐              ┌─────────────┐
+│ declined │                 │ cancelled │◄─────────────│ in_progress │
+└──────────┘                 └───────────┘     cancel   └──────┬──────┘
+                                   ▲                           │
+                                   │                           │ complete
+                                   │                           ▼
+                                   │                    ┌───────────┐
+                                   └────────────────────│ completed │
+                                          cancel        └───────────┘
+```
 
 **Indexes:**
 - Index on `chat`
@@ -307,18 +525,50 @@ Tracks item exchanges between users.
 | From | To | Type | Description |
 |------|----|----|-------------|
 | Post | User | Many-to-One | Post author |
-| Post | User | Many-to-Many | Post reactions |
+| Post | User | Many-to-Many | Post reactions, viewedBy |
 | Comment | Post | Many-to-One | Comment belongs to post |
 | Comment | User | Many-to-One | Comment author |
 | Comment | User | Many-to-Many | Comment likes |
-| Chat | User | Many-to-Many | Chat participants |
+| Chat | User | Many-to-Many | Chat participants (2 users) |
 | Chat | Post | Many-to-One | Related post (optional) |
-| Chat | Message | One-to-One | Last message |
+| Chat | Message | One-to-One | Last message reference |
 | Message | Chat | Many-to-One | Message belongs to chat |
 | Message | User | Many-to-One | Message sender |
 | Message | User | Many-to-Many | Read receipts, reactions |
 | Report | Post | Many-to-One | Reported post |
-| Report | User | Many-to-One | Reporter, reviewer |
+| Report | User | Many-to-One | Reporter |
+| Report | User | Many-to-One | **Admin reviewer (reviewedBy)** |
 | Exchange | Chat | One-to-One | Related chat |
 | Exchange | Post | One-to-One | Item being exchanged |
-| Exchange | User | Many-to-One | Giver and receiver |
+| Exchange | User | Many-to-One | Giver (post author) |
+| Exchange | User | Many-to-One | Receiver (requester) |
+
+---
+
+## Database Statistics & Admin Dashboard
+
+The admin dashboard provides real-time statistics:
+
+| Metric | Description | Collection |
+|--------|-------------|------------|
+| Total Users | All registered users | Users |
+| Active Users | Users active in last 30 days | Users (derived) |
+| Blocked Users | Users with `isBlocked: true` | Users |
+| Total Posts | All posts created | Posts |
+| Available Posts | Posts with `status: available` | Posts |
+| Donated Posts | Successful donations | Posts |
+| Posts by Category | Distribution across categories | Posts |
+| Pending Reports | Reports awaiting review | Reports |
+| Resolved Reports | Addressed reports | Reports |
+| Recent Activity | Posts/donations in last 7 days | Posts |
+
+---
+
+## Security Considerations
+
+1. **Password Security**: All passwords are hashed using bcrypt with 10 salt rounds
+2. **Admin Access**: Admin privileges controlled via `isAdmin` flag
+3. **User Blocking**: `isBlocked` flag prevents user actions
+4. **Soft Deletes**: Messages support soft deletion for audit trails
+5. **Data Validation**: Mongoose schemas enforce data integrity
+6. **Index Optimization**: Strategic indexes for query performance
