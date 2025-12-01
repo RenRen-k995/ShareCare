@@ -9,22 +9,26 @@ dotenv.config();
 const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/sharecare";
 
-// Default admin credentials - CHANGE THESE IN PRODUCTION
-const DEFAULT_ADMIN = {
-  username: "admin",
-  email: "admin@sharecare.com",
-  password: "Admin@123456", // Change this in production!
+// Admin credentials from environment variables or defaults
+// IMPORTANT: Use environment variables in production!
+const getAdminCredentials = () => ({
+  username: process.env.ADMIN_USERNAME || "admin",
+  email: process.env.ADMIN_EMAIL || "admin@sharecare.com",
+  password: process.env.ADMIN_PASSWORD || "Admin@123456",
   fullName: "System Administrator",
   isAdmin: true,
   bio: "ShareCare System Administrator",
-};
+});
+
+// Sample user password from environment or default (for development/testing only)
+const SAMPLE_USER_PASSWORD = process.env.SAMPLE_USER_PASSWORD || "User@123456";
 
 // Sample users for testing
 const SAMPLE_USERS = [
   {
     username: "user1",
     email: "user1@example.com",
-    password: "User@123456",
+    password: SAMPLE_USER_PASSWORD,
     fullName: "Nguyễn Văn A",
     bio: "Người dùng thích chia sẻ đồ vật",
     gender: "male",
@@ -32,7 +36,7 @@ const SAMPLE_USERS = [
   {
     username: "user2",
     email: "user2@example.com",
-    password: "User@123456",
+    password: SAMPLE_USER_PASSWORD,
     fullName: "Trần Thị B",
     bio: "Người dùng thích chia sẻ kiến thức",
     gender: "female",
@@ -40,7 +44,7 @@ const SAMPLE_USERS = [
   {
     username: "user3",
     email: "user3@example.com",
-    password: "User@123456",
+    password: SAMPLE_USER_PASSWORD,
     fullName: "Lê Văn C",
     bio: "Người dùng thích hỗ trợ cộng đồng",
     gender: "male",
@@ -101,17 +105,20 @@ async function seedDatabase() {
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB\n");
 
+    // Get admin credentials
+    const adminCredentials = getAdminCredentials();
+
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: DEFAULT_ADMIN.email });
+    const existingAdmin = await User.findOne({ email: adminCredentials.email });
     if (existingAdmin) {
       console.log("⚠️  Admin user already exists, skipping admin creation");
     } else {
       console.log("👤 Creating admin user...");
-      const admin = new User(DEFAULT_ADMIN);
+      const admin = new User(adminCredentials);
       await admin.save();
-      console.log(`✅ Admin user created: ${DEFAULT_ADMIN.email}`);
-      console.log(`   Username: ${DEFAULT_ADMIN.username}`);
-      console.log(`   Password: ${DEFAULT_ADMIN.password} (CHANGE THIS!)\n`);
+      console.log(`✅ Admin user created: ${adminCredentials.email}`);
+      console.log(`   Username: ${adminCredentials.username}`);
+      console.log(`   Password: ${adminCredentials.password.substring(0, 3)}${"*".repeat(adminCredentials.password.length - 3)} (CHANGE THIS!)\n`);
     }
 
     // Ask if we should add sample data
@@ -140,9 +147,10 @@ async function seedDatabase() {
       // Create sample posts
       console.log("📄 Creating sample posts...");
       for (let i = 0; i < SAMPLE_POSTS.length; i++) {
+        const postAuthorIndex = i % createdUsers.length;
         const postData = {
           ...SAMPLE_POSTS[i],
-          author: createdUsers[i % createdUsers.length]._id,
+          author: createdUsers[postAuthorIndex]._id,
         };
 
         const existingPost = await Post.findOne({ title: postData.title });
@@ -153,12 +161,17 @@ async function seedDatabase() {
           await post.save();
           console.log(`✅ Created post: ${postData.title}`);
 
-          // Add a comment to the post
+          // Add a comment to the post from a different user
           if (SAMPLE_COMMENTS[i]) {
+            // Ensure commenter is different from post author
+            let commentAuthorIndex = (postAuthorIndex + 1) % createdUsers.length;
+            if (commentAuthorIndex === postAuthorIndex) {
+              commentAuthorIndex = (postAuthorIndex + 2) % createdUsers.length;
+            }
+            
             const commentData = {
               post: post._id,
-              author:
-                createdUsers[(i + 1) % createdUsers.length]._id,
+              author: createdUsers[commentAuthorIndex]._id,
               content: SAMPLE_COMMENTS[i].content,
             };
             const comment = new Comment(commentData);
@@ -173,7 +186,7 @@ async function seedDatabase() {
     console.log("🎉 Database seeding completed!\n");
     console.log("=".repeat(50));
     console.log("📋 Summary:");
-    console.log(`   - Admin user: ${DEFAULT_ADMIN.email}`);
+    console.log(`   - Admin user: ${adminCredentials.email}`);
     if (addSampleData) {
       console.log(`   - Sample users: ${SAMPLE_USERS.length}`);
       console.log(`   - Sample posts: ${SAMPLE_POSTS.length}`);
