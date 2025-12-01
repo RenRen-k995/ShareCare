@@ -7,6 +7,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "seed": "node src/utils/seedDatabase.js",
+    "seed:sample": "node src/utils/seedDatabase.js --sample",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": [

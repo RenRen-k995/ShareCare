@@ -6,6 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import connectDB from "./config/database.js";
 import { initializeSocket } from "./config/socket.js";
+import initializeAdmin from "./utils/initAdmin.js";
 import authRoutes from "./routes/authRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
@@ -60,7 +61,10 @@ app.set("io", io);
 // Connect to database and start server
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
+connectDB().then(async () => {
+  // Initialize admin user if none exists
+  await initializeAdmin();
+
   httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Socket.IO is ready for real-time connections`);

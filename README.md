@@ -185,11 +185,28 @@ NODE_ENV=development
 mongod
 ```
 
-5. Start the backend server:
+5. **(Optional) Seed the database with admin user and sample data:**
+
+```bash
+# Create admin user only
+npm run seed
+
+# Create admin + sample data for testing
+npm run seed:sample
+```
+
+**Default Admin Credentials:**
+- Email: admin@sharecare.com
+- Password: Admin@123456
+- ⚠️ **Change these in production!**
+
+6. Start the backend server:
 
 ```bash
 npm run dev
 ```
+
+**Note:** The server will automatically create a default admin user if none exists on startup.
 
 The backend will run on `http://localhost:5000`
 

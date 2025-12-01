@@ -6,13 +6,47 @@ This document describes the MongoDB database schema for the ShareCare applicatio
 
 ShareCare uses MongoDB with Mongoose ODM. The database consists of the following collections:
 
-- **Users** - User accounts and profiles
+- **Users** - User accounts and profiles (including admin users)
 - **Posts** - Shared items, knowledge, and emotional support posts
 - **Chats** - Chat conversations between users
 - **Messages** - Individual messages within chats
 - **Comments** - Comments on posts
 - **Reports** - User reports on posts
 - **Exchanges** - Item exchange tracking between users
+
+---
+
+## Database Setup
+
+### Quick Setup
+
+1. **Initialize database with admin user:**
+   ```bash
+   cd backend
+   npm run seed
+   ```
+
+2. **Initialize with sample data (for testing):**
+   ```bash
+   cd backend
+   npm run seed:sample
+   ```
+
+### Default Admin Credentials
+
+After running the seed script or starting the server for the first time, a default admin user will be created:
+
+| Field | Value |
+|-------|-------|
+| Email | admin@sharecare.com |
+| Password | Admin@123456 |
+| Username | admin |
+
+**⚠️ IMPORTANT: Change these credentials in production!**
+
+### Auto-initialization
+
+When the server starts, it automatically checks if an admin user exists. If not, it creates the default admin user. This ensures the application always has at least one admin account.
 
 ---
 
