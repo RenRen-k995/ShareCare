@@ -116,7 +116,7 @@ export default function CreatePostWidget() {
 
   return (
     <>
-      <div className="p-6 mb-4 bg-white shadow-sm rounded-2xl">
+      <div className="p-6 mb-4 bg-white shadow-md hover:shadow-lg transition-shadow duration-200 rounded-2xl border border-gray-100">
         <div className="flex items-start space-x-4">
           {/* User Avatar */}
           <Avatar

@@ -91,7 +91,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         to={`/posts/${post._id}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="block w-full p-5 mb-6 transition-all duration-200 bg-white border border-transparent cursor-pointer rounded-3xl hover:border-slate-100 hover:shadow-sm"
+        className="block w-full p-5 mb-6 transition-all duration-200 bg-white border border-gray-100 cursor-pointer rounded-3xl shadow-md hover:shadow-lg hover:border-gray-200"
         onClick={(e) => {
           if (
             e.target.closest("button") ||

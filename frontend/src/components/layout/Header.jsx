@@ -8,7 +8,7 @@ export default function Header() {
   const isSettingsPage = location.pathname === "/settings";
 
   return (
-    <header className="flex items-center justify-between h-[4.5rem] px-8 py-4 bg-white">
+    <header className="flex items-center justify-between h-[4.5rem] px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
       {/* Left side - Only show Logo on Settings page */}
       <div className="flex items-center min-w-[200px]">
         {isSettingsPage && (

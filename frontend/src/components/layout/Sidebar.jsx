@@ -49,7 +49,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex flex-col bg-white w-[17rem]">
+    <aside className="flex flex-col bg-white w-[17rem] border-r border-gray-100 shadow-sm">
       {/* Logo */}
       <div className="px-6 py-8">
         <Link to="/" className="flex items-center space-x-3">
@@ -74,8 +74,8 @@ export default function Sidebar() {
                 flex items-center px-4 py-3 rounded-xl transition-all duration-200
                 ${
                   active
-                    ? "bg-slate-50 text-gray-900 font-medium shadow-sm"
-                    : "text-gray-600 hover:bg-slate-50 hover:text-gray-900"
+                    ? "bg-gradient-to-r from-emerald-50 to-teal-50 text-gray-900 font-medium shadow-sm border border-emerald-100"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm"
                 }
               `}
             >

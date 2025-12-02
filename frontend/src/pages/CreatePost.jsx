@@ -114,7 +114,7 @@ export default function CreatePost() {
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F7F7]">
       {/* --- Sticky Header --- */}
-      <header className="sticky top-0 z-50 h-16 bg-white">
+      <header className="sticky top-0 z-50 h-16 bg-white border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between h-full max-w-6xl px-6 mx-auto">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold text-gray-900">Creation Center</h1>
@@ -139,7 +139,7 @@ export default function CreatePost() {
 
         {/* Main White Card Container */}
         {/* IMPORTANT: No overflow-hidden here, or sticky breaks */}
-        <div className="bg-white rounded-2xl p-8 min-h-[80vh]">
+        <div className="bg-white rounded-2xl p-8 min-h-[80vh] shadow-md border border-gray-100">
           {/* Header Row: Title + Drafts */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">New Article</h2>

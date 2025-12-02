@@ -60,7 +60,7 @@ export default function Profile() {
     <MainLayout rightSidebar={null}>
       <div className="px-16 pt-5 pb-20">
         {/* --- 1. Profile Header & Banner --- */}
-        <div className="mb-3 overflow-hidden bg-white border border-gray-100 shadow-sm rounded-[1.2rem]">
+        <div className="mb-3 overflow-hidden bg-white border border-gray-100 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-[1.2rem]">
           {/* Banner Area */}
           <div className="h-48 w-full rounded-t-[1.2rem] bg-gradient-to-r from-emerald-100 via-teal-100 to-blue-100 overflow-hidden relative">
             {/* Decorative patterns */}
@@ -239,7 +239,7 @@ export default function Profile() {
           {/* RIGHT COLUMN: Info & Widgets (1/3 width) */}
           <div className="space-y-6">
             {/* Personal Info Card */}
-            <div className="bg-white p-6 rounded-[1.2rem] shadow-sm border border-gray-100">
+            <div className="bg-white p-6 rounded-[1.2rem] shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100">
               <h3 className="mb-4 text-sm font-bold text-gray-900">
                 Personal Information
               </h3>
@@ -264,7 +264,7 @@ export default function Profile() {
             </div>
 
             {/* Creation Center Widget */}
-            <div className="bg-white p-6 rounded-[1.2rem] shadow-sm border border-gray-100">
+            <div className="bg-white p-6 rounded-[1.2rem] shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100">
               <h3 className="mb-4 text-sm font-bold text-gray-900">
                 Creation Center
               </h3>
