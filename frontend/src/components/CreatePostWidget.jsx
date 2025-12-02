@@ -142,7 +142,7 @@ export default function CreatePostWidget() {
 
                 {/* Cover Image Preview */}
                 {coverImagePreview && (
-                  <div className="relative overflow-hidden border rounded-xl border-slate-200">
+                  <div className="relative w-6/12 overflow-hidden border rounded-xl border-slate-200">
                     <img
                       src={coverImagePreview}
                       alt="Cover"
@@ -164,7 +164,7 @@ export default function CreatePostWidget() {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Share your thoughts, item details, or support message..."
-                    className="w-full px-6 py-4 text-gray-900 transition-colors border-2 border-transparent resize-none bg-slate-50 hover:bg-slate-100 rounded-2xl focus:outline-none focus:border-emerald-200 focus:bg-white"
+                    className="w-full px-6 py-4 text-gray-900 transition-colors border-2 border-transparent resize-none bg-[#F5F7F7] hover:bg-slate-100 rounded-2xl focus:outline-none focus:border-emerald-200 focus:bg-white"
                     rows={6}
                     maxLength={MAX_LENGTH}
                     autoFocus
