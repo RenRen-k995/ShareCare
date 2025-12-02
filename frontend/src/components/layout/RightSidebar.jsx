@@ -13,7 +13,7 @@ export default function RightSidebar() {
   return (
     <aside className="flex-shrink-0 py-5 pr-6 space-y-6 overflow-y-auto w-96">
       {/* Community Stats */}
-      <div className="p-6 bg-white shadow-sm rounded-2xl">
+      <div className="p-6 bg-white shadow-md hover:shadow-lg transition-shadow duration-200 rounded-2xl border border-gray-100">
         <div className="flex items-center mb-4 space-x-2">
           <TrendingUp className="w-5 h-5 text-emerald-500" />
           <h3 className="font-bold text-gray-900">Community Stats</h3>
