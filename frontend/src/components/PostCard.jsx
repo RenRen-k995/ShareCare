@@ -91,7 +91,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         to={`/posts/${post._id}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="block w-full p-5 mb-6 transition-all duration-200 bg-white border border-gray-100 cursor-pointer rounded-3xl shadow-md hover:shadow-lg hover:border-gray-200"
+        className="block w-full p-5 transition-all duration-200 bg-white border border-gray-100 shadow-md cursor-pointer rounded-3xl hover:shadow-lg hover:border-gray-200"
         onClick={(e) => {
           if (
             e.target.closest("button") ||
@@ -224,7 +224,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         </div>
 
         {/* --- TEXT CONTENT --- */}
-        <div className="px-1 mb-4">
+        <div className="px-1 mb-2">
           <p className="text-gray-400 text-[15px] leading-relaxed line-clamp-1">
             {extractFirstLineFromHtml(post.description, 80)}
           </p>

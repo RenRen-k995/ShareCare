@@ -5,7 +5,11 @@ import postService from "../services/postService";
 import PostCard from "../components/PostCard";
 import MainLayout from "../components/layout/MainLayout";
 import CreatePostWidget from "../components/CreatePostWidget";
-import { ErrorMessage, EmptyState, PageLoadingState } from "../components/common";
+import {
+  ErrorMessage,
+  EmptyState,
+  PageLoadingState,
+} from "../components/common";
 import { Button } from "../components/ui/button";
 
 export default function Home() {
@@ -74,7 +78,7 @@ export default function Home() {
             }
           />
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-4">
             {posts.map((post) => (
               <PostCard
                 key={post._id}

@@ -294,7 +294,7 @@ export default function PostDetail() {
           </div>
 
           {post.image && (
-            <div className="w-full aspect-[2.1] rounded-2xl overflow-hidden bg-gray-100 mb-10 shadow-md border border-gray-100">
+            <div className="w-full aspect-[2] rounded-xl overflow-hidden bg-gray-100 mb-10 shadow-md border border-gray-100">
               <img
                 src={getImageUrl(post.image)}
                 alt={post.title}
@@ -309,7 +309,7 @@ export default function PostDetail() {
           />
 
           {/* Main Post Reaction Buttons */}
-          <div className="flex justify-center gap-4 pt-10 mt-2 border-t border-gray-100">
+          <div className="flex justify-center gap-4 pt-3 mt-2">
             <button
               onClick={handleReaction}
               className={`flex items-center justify-center gap-3 px-12 py-3 rounded-3xl transition-all duration-200 font-medium shadow-sm w-56 ${
