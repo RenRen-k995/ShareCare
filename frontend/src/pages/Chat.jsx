@@ -85,13 +85,12 @@ export default function Chat() {
   };
 
   return (
-    // Hide global right sidebar to give Chat full space
     <MainLayout rightSidebar={null}>
       <div className="absolute inset-0 flex flex-col px-0 pt-6 pb-6 md:px-6">
         {/* Main Chat Container */}
-        <div className="flex-1 min-h-0 flex flex-col bg-white md:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col neu-card md:rounded-3xl overflow-hidden">
           <div className="grid h-full grid-cols-1 lg:grid-cols-3">
-            {/* --- Left: Chat List --- */}
+            {/* Left: Chat List */}
             <div
               className={`lg:col-span-1 border-r border-gray-100 h-full flex flex-col overflow-hidden ${
                 showChatWindow ? "hidden lg:flex" : "flex"
@@ -103,7 +102,7 @@ export default function Chat() {
               />
             </div>
 
-            {/* --- Right: Chat Window --- */}
+            {/* Right: Chat Window */}
             <div
               className={`lg:col-span-2 h-full bg-white overflow-hidden ${
                 showChatWindow ? "flex flex-col" : "hidden lg:flex flex-col"
@@ -111,7 +110,7 @@ export default function Chat() {
             >
               {loading ? (
                 <div className="flex items-center justify-center h-full bg-gray-50/50">
-                  <div className="w-8 h-8 border-b-2 rounded-full animate-spin border-emerald-500"></div>
+                  <div className="w-8 h-8 border-b-2 rounded-full animate-spin border-primary-500"></div>
                 </div>
               ) : (
                 <ChatWindow chat={selectedChat} onBack={handleBack} />
