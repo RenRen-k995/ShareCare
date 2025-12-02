@@ -14,16 +14,20 @@ export const isImageFile = (mimetype) => {
 /**
  * Get the appropriate Cloudinary folder for a file upload
  * @param {string} mimetype - The MIME type of the file
- * @param {string} uploadType - The type of upload ('chat' or 'post')
+ * @param {string} uploadType - The type of upload ('chat', 'post', or 'avatar')
  * @returns {string} The Cloudinary folder path
  */
 export const getCloudinaryFolder = (mimetype, uploadType = "chat") => {
   const isImage = isImageFile(mimetype);
-  
+
+  if (uploadType === "avatar") {
+    return "sharecare/avatars";
+  }
+
   if (uploadType === "chat") {
     return isImage ? "sharecare/chat_images" : "sharecare/chat_files";
   }
-  
+
   // Default to post folders
   return isImage ? "sharecare/post_images" : "sharecare/post_files";
 };

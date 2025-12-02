@@ -10,6 +10,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import { Button } from "../ui/button";
+import { compressImage } from "../../utils/imageCompression";
 
 const EMOJI_LIST = ["👍", "❤️", "😊", "😂", "🎉", "👏", "🔥", "✨", "😭", "👀"];
 
@@ -20,6 +21,7 @@ export default function MessageInput({ chatId, onMessageSent }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState(""); // For showing compression/upload status
 
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -95,8 +97,36 @@ export default function MessageInput({ chatId, onMessageSent }) {
   // Upload file lên Server
   const uploadFileToServer = async (file) => {
     const formData = new FormData();
-    formData.append("file", file); // Tên field phải khớp với multer ở backend
 
+    // Compress images before upload for faster upload speed
+    if (file.type.startsWith("image/")) {
+      try {
+        setUploadStatus("Compressing image...");
+        console.log("Compressing image before upload...");
+        const compressedBase64 = await compressImage(file, 1200, 0.8); // Max 1200px width, 80% quality
+
+        // Convert base64 to blob
+        const response = await fetch(compressedBase64);
+        const blob = await response.blob();
+        const compressedFile = new File([blob], file.name, {
+          type: "image/jpeg",
+        });
+
+        console.log(
+          `Image compressed: ${(file.size / 1024).toFixed(1)}KB -> ${(
+            compressedFile.size / 1024
+          ).toFixed(1)}KB`
+        );
+        formData.append("file", compressedFile);
+      } catch (error) {
+        console.warn("Compression failed, uploading original:", error);
+        formData.append("file", file);
+      }
+    } else {
+      formData.append("file", file);
+    }
+
+    setUploadStatus("Uploading...");
     const token = localStorage.getItem("token");
     const res = await fetch(`${API_URL}/api/chat/upload`, {
       method: "POST",
@@ -146,12 +176,14 @@ export default function MessageInput({ chatId, onMessageSent }) {
       if (textareaRef.current) textareaRef.current.style.height = "auto";
       removeFile();
       setShowEmojiPicker(false);
+      setUploadStatus("");
       onMessageSent?.();
     } catch (error) {
       console.error("Send error:", error);
       alert(`Gửi tin nhắn thất bại: ${error.message}`);
     } finally {
       setUploading(false);
+      setUploadStatus("");
     }
   };
 
@@ -312,6 +344,7 @@ export default function MessageInput({ chatId, onMessageSent }) {
           onClick={handleSend}
           disabled={(!message.trim() && !selectedFile) || uploading}
           className="flex-shrink-0 w-10 h-10 text-white rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 disabled:opacity-50"
+          title={uploadStatus || "Send message"}
         >
           {uploading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -320,6 +353,13 @@ export default function MessageInput({ chatId, onMessageSent }) {
           )}
         </Button>
       </div>
+
+      {/* Upload Status Indicator */}
+      {uploading && uploadStatus && (
+        <div className="mt-2 text-xs text-center text-slate-500 animate-pulse">
+          {uploadStatus}
+        </div>
+      )}
     </div>
   );
 }

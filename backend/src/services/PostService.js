@@ -1,5 +1,31 @@
 import PostRepository from "../repositories/PostRepository.js";
 import User from "../models/User.js"; // Import User model
+import {
+  deleteFromCloudinary,
+  deleteMultipleFromCloudinary,
+} from "../config/cloudinary.js";
+
+/**
+ * Extract Cloudinary image URLs from HTML content
+ * @param {string} htmlContent - HTML content from RichTextEditor
+ * @returns {string[]} Array of Cloudinary image URLs
+ */
+const extractCloudinaryImagesFromHTML = (htmlContent) => {
+  if (!htmlContent || typeof htmlContent !== "string") return [];
+
+  const imageUrls = [];
+  // Match img tags with Cloudinary URLs
+  const imgRegex = /<img[^>]+src="([^"]*cloudinary[^"]*)"/gi;
+  let match;
+
+  while ((match = imgRegex.exec(htmlContent)) !== null) {
+    if (match[1]) {
+      imageUrls.push(match[1]);
+    }
+  }
+
+  return imageUrls;
+};
 
 class PostService {
   // ... other methods ...
@@ -38,6 +64,40 @@ class PostService {
     if (post.author._id.toString() !== userId) {
       throw new Error("You are not authorized to update this post");
     }
+
+    // If updating main image, delete old one from Cloudinary
+    if (updateData.image && post.image && updateData.image !== post.image) {
+      await deleteFromCloudinary(post.image);
+    }
+
+    // If updating content images, delete removed ones from Cloudinary
+    if (updateData.contentImages && post.contentImages) {
+      const oldImages = post.contentImages.filter(
+        (img) => !updateData.contentImages.includes(img)
+      );
+      if (oldImages.length > 0) {
+        await deleteMultipleFromCloudinary(oldImages);
+      }
+    }
+
+    // If updating description, find and delete removed images from HTML
+    if (updateData.description && post.description) {
+      const oldDescriptionImages = extractCloudinaryImagesFromHTML(
+        post.description
+      );
+      const newDescriptionImages = extractCloudinaryImagesFromHTML(
+        updateData.description
+      );
+
+      const removedImages = oldDescriptionImages.filter(
+        (img) => !newDescriptionImages.includes(img)
+      );
+
+      if (removedImages.length > 0) {
+        await deleteMultipleFromCloudinary(removedImages);
+      }
+    }
+
     delete updateData.author;
     delete updateData.reactions;
     const updatedPost = await PostRepository.update(postId, updateData);
@@ -51,6 +111,27 @@ class PostService {
     }
     if (post.author._id.toString() !== userId && !isAdmin) {
       throw new Error("You are not authorized to delete this post");
+    }
+
+    // Delete images from Cloudinary before deleting post
+    const imagesToDelete = [];
+
+    // 1. Cover image
+    if (post.image) imagesToDelete.push(post.image);
+
+    // 2. Content images array (if exists)
+    if (post.contentImages && post.contentImages.length > 0) {
+      imagesToDelete.push(...post.contentImages);
+    }
+
+    // 3. Extract images from description HTML (RichTextEditor content)
+    const descriptionImages = extractCloudinaryImagesFromHTML(post.description);
+    if (descriptionImages.length > 0) {
+      imagesToDelete.push(...descriptionImages);
+    }
+
+    if (imagesToDelete.length > 0) {
+      await deleteMultipleFromCloudinary(imagesToDelete);
     }
 
     // Subtract likes from author's totalLikes before deleting

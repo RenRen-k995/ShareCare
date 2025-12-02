@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { Chat, Message } from "../models/Chat.js";
 import User from "../models/User.js";
+import { deleteFromCloudinary } from "./cloudinary.js";
 
 const connectedUsers = new Map(); // userId -> socketId
 const typingUsers = new Map(); // chatId -> Set of userIds
@@ -331,6 +332,11 @@ export const initializeSocket = (httpServer) => {
         if (message.sender.toString() !== socket.userId) {
           socket.emit("error", { message: "Unauthorized" });
           return;
+        }
+
+        // Delete file from Cloudinary if message has a file attachment
+        if (message.fileUrl) {
+          await deleteFromCloudinary(message.fileUrl);
         }
 
         // Soft delete

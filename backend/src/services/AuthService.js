@@ -1,5 +1,33 @@
 import jwt from "jsonwebtoken";
 import UserRepository from "../repositories/UserRepository.js";
+import {
+  deleteFromCloudinary,
+  deleteMultipleFromCloudinary,
+} from "../config/cloudinary.js";
+import Post from "../models/Post.js";
+import { Message } from "../models/Chat.js";
+
+/**
+ * Extract Cloudinary image URLs from HTML content
+ * @param {string} htmlContent - HTML content from RichTextEditor
+ * @returns {string[]} Array of Cloudinary image URLs
+ */
+const extractCloudinaryImagesFromHTML = (htmlContent) => {
+  if (!htmlContent || typeof htmlContent !== "string") return [];
+
+  const imageUrls = [];
+  // Match img tags with Cloudinary URLs
+  const imgRegex = /<img[^>]+src="([^"]*cloudinary[^"]*)"/gi;
+  let match;
+
+  while ((match = imgRegex.exec(htmlContent)) !== null) {
+    if (match[1]) {
+      imageUrls.push(match[1]);
+    }
+  }
+
+  return imageUrls;
+};
 
 class AuthService {
   async register(userData) {
@@ -84,6 +112,18 @@ class AuthService {
       }
     }
 
+    // If avatar is being updated, delete old avatar from Cloudinary
+    if (updateData.avatar) {
+      const currentUser = await UserRepository.findById(userId);
+      if (
+        currentUser &&
+        currentUser.avatar &&
+        currentUser.avatar !== updateData.avatar
+      ) {
+        await deleteFromCloudinary(currentUser.avatar);
+      }
+    }
+
     const user = await UserRepository.update(userId, updateData);
     if (!user) {
       throw new Error("User not found");
@@ -128,6 +168,74 @@ class AuthService {
     await user.save();
 
     return user;
+  }
+
+  async deleteAccount(userId, password) {
+    const user = await UserRepository.findByIdWithPassword(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Verify password before deletion
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      throw new Error("Incorrect password");
+    }
+
+    // Collect all images to delete from Cloudinary
+    const imagesToDelete = [];
+
+    // 1. Delete user avatar
+    if (user.avatar) {
+      imagesToDelete.push(user.avatar);
+    }
+
+    // 2. Find and delete all posts by this user
+    const userPosts = await Post.find({ author: userId });
+    for (const post of userPosts) {
+      // Cover image
+      if (post.image) imagesToDelete.push(post.image);
+
+      // Content images array
+      if (post.contentImages && post.contentImages.length > 0) {
+        imagesToDelete.push(...post.contentImages);
+      }
+
+      // Extract images from description HTML (RichTextEditor content)
+      const descriptionImages = extractCloudinaryImagesFromHTML(
+        post.description
+      );
+      if (descriptionImages.length > 0) {
+        imagesToDelete.push(...descriptionImages);
+      }
+    }
+
+    // 3. Find and delete all chat messages with files by this user
+    const userMessages = await Message.find({
+      sender: userId,
+      fileUrl: { $exists: true, $ne: null },
+    });
+    for (const message of userMessages) {
+      if (message.fileUrl) {
+        imagesToDelete.push(message.fileUrl);
+      }
+    }
+
+    // Delete all images from Cloudinary
+    if (imagesToDelete.length > 0) {
+      await deleteMultipleFromCloudinary(imagesToDelete);
+    }
+
+    // Delete user's posts
+    await Post.deleteMany({ author: userId });
+
+    // Delete user's messages (or you can keep them with anonymized sender)
+    // await Message.deleteMany({ sender: userId });
+
+    // Delete the user account
+    await UserRepository.delete(userId);
+
+    return { message: "Account deleted successfully" };
   }
 }
 

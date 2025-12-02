@@ -6,7 +6,7 @@ dotenv.config();
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/sharecare"
+      process.env.MONGODB_URI || "mongodb://localhost:5000/sharecare"
     );
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {

@@ -2,7 +2,8 @@ import React, { useState, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import authService from "../services/authService";
 import MainLayout from "../components/layout/MainLayout";
-import { uploadImage } from "../lib/api";
+import { uploadAvatar } from "../lib/api";
+import { compressImage } from "../utils/imageCompression";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -59,11 +60,28 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
 
     try {
       setUploadingAvatar(true);
-      // Use existing utility to upload to /api/posts/upload-image
-      const imageUrl = await uploadImage(file);
+
+      // Compress avatar image before upload (500px max size, suitable for avatars)
+      const compressedBase64 = await compressImage(file, 500, 0.85);
+
+      // Convert base64 to blob
+      const response = await fetch(compressedBase64);
+      const blob = await response.blob();
+      const compressedFile = new File([blob], file.name, {
+        type: "image/jpeg",
+      });
+
+      console.log(
+        `Avatar compressed: ${(file.size / 1024).toFixed(1)}KB -> ${(
+          compressedFile.size / 1024
+        ).toFixed(1)}KB`
+      );
+
+      // Use dedicated avatar upload endpoint
+      const avatarUrl = await uploadAvatar(compressedFile);
 
       // Update form state with new URL
-      setFormData((prev) => ({ ...prev, avatar: imageUrl }));
+      setFormData((prev) => ({ ...prev, avatar: avatarUrl }));
     } catch (err) {
       console.error("Avatar upload failed:", err);
       alert("Failed to upload avatar");
