@@ -45,24 +45,24 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="bg-white">
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <Heart className="h-8 w-8 text-blue-600" />
+          <Link to="/" className="flex items-center gap-2">
+            <Heart className="size-8 text-emerald-600" />
             <span className="text-2xl font-bold text-gray-900">ShareCare</span>
           </Link>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
             {user ? (
               <>
                 <span className="text-gray-700">Hello, {user.username}</span>
                 <Link to="/chat">
-                  <Button variant="outline" size="sm" className="relative">
-                    <MessageSquare className="h-4 w-4 mr-2" />
+                  <Button variant="ghost" size="sm" className="relative">
+                    <MessageSquare className="size-4 mr-2" />
                     Messages
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full size-5 flex items-center justify-center font-bold">
                         {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
@@ -70,26 +70,26 @@ export default function Navbar() {
                 </Link>
                 {user.isAdmin && (
                   <Link to="/admin">
-                    <Button variant="outline" size="sm">
+                    <Button variant="ghost" size="sm">
                       Admin Panel
                     </Button>
                   </Link>
                 )}
                 <Link to="/profile">
-                  <Button variant="outline" size="sm">
-                    <User className="h-4 w-4 mr-2" />
+                  <Button variant="ghost" size="sm">
+                    <User className="size-4 mr-2" />
                     Profile
                   </Button>
                 </Link>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="size-4 mr-2" />
                   Logout
                 </Button>
               </>
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="outline">Login</Button>
+                  <Button variant="ghost">Login</Button>
                 </Link>
                 <Link to="/register">
                   <Button>Register</Button>

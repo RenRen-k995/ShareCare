@@ -91,7 +91,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         to={`/posts/${post._id}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="block w-full p-5 transition-all duration-200 bg-white border border-gray-100 shadow-md cursor-pointer rounded-3xl hover:shadow-lg hover:border-gray-200"
+        className="block w-full p-5 bg-white cursor-pointer rounded-3xl"
         onClick={(e) => {
           if (
             e.target.closest("button") ||
@@ -104,7 +104,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         {/* --- HEADER --- */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 overflow-hidden border rounded-full bg-slate-100 border-slate-50 shrink-0">
+            <div className="overflow-hidden bg-gray-100 rounded-full size-10 shrink-0">
               {post.author?.avatar ? (
                 <img
                   src={post.author.avatar}
@@ -112,7 +112,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                   className="object-cover w-full h-full"
                 />
               ) : (
-                <div className="flex items-center justify-center w-full h-full text-sm font-bold text-slate-400">
+                <div className="flex items-center justify-center w-full h-full text-sm font-bold text-gray-400">
                   {post.author?.username?.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -123,7 +123,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                 <span className="font-bold text-gray-900 text-[15px]">
                   {post.author?.username || "Unknown"}
                 </span>
-                <span className="text-sm text-slate-400">
+                <span className="text-sm text-gray-400">
                   {formatTimeAgo(post.createdAt)}
                 </span>
               </div>
@@ -138,15 +138,12 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                 </Badge>
 
                 {post.category === "items" && post.status === "available" && (
-                  <Badge
-                    variant="outline"
-                    className="font-normal text-xs px-2.5 py-0.5 h-5 text-emerald-600 border-emerald-200 bg-emerald-50"
-                  >
+                  <Badge className="font-normal text-xs px-2.5 py-0.5 h-5 text-emerald-600 bg-emerald-50">
                     Available
                   </Badge>
                 )}
                 {post.category === "items" && post.status === "donated" && (
-                  <Badge className="font-normal text-xs px-2.5 py-0.5 h-5 bg-blue-500 text-white hover:bg-blue-600 border-transparent">
+                  <Badge className="font-normal text-xs px-2.5 py-0.5 h-5 bg-emerald-600 text-white hover:bg-emerald-700">
                     Donated
                   </Badge>
                 )}
@@ -154,30 +151,30 @@ export default function PostCard({ post, onUpdate, onDelete }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              className="flex items-center justify-center w-8 h-8 transition-colors rounded-full bg-slate-50 hover:bg-slate-100 text-slate-500"
+              className="flex items-center justify-center h-8 text-gray-500 transition-colors bg-[#ECEDED] w-[3.2rem] rounded-xl hover:bg-[#D0D0D0] hover:text-gray-700 hover:shadow"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="size-6" />
             </button>
 
             <div className="relative">
               <button
-                className="flex items-center justify-center w-8 h-8 transition-colors rounded-full text-slate-400 hover:bg-slate-50"
+                className="flex items-center justify-center text-gray-400 transition-colors rounded-xl size-8 hover:bg-[#F5F7F7] hover:text-gray-700"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setShowReportMenu(!showReportMenu);
                 }}
               >
-                <MoreHorizontal className="w-5 h-5" />
+                <MoreHorizontal className="size-7" />
               </button>
               {showReportMenu && (
-                <div className="absolute right-0 z-10 w-40 py-1 overflow-hidden bg-white border shadow-lg top-8 border-slate-100 rounded-xl">
+                <div className="absolute right-0 z-10 w-40 py-1 overflow-hidden bg-white top-8 rounded-xl">
                   {user && post.author?._id === user.id ? (
                     <button
                       onClick={(e) => {
@@ -185,7 +182,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                         e.preventDefault();
                         handleDelete();
                       }}
-                      className="w-full px-4 py-2 text-xs text-left text-red-600 hover:bg-red-50"
+                      className="w-full px-4 py-2 text-xs text-left text-red-600 transition-colors hover:bg-red-50"
                     >
                       Delete Post
                     </button>
@@ -196,7 +193,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                         e.preventDefault();
                         handleReport("spam");
                       }}
-                      className="w-full px-4 py-2 text-xs text-left text-slate-600 hover:bg-slate-50"
+                      className="w-full px-4 py-2 text-xs text-left text-gray-600 transition-colors hover:bg-gray-100"
                     >
                       Report Spam
                     </button>
@@ -209,7 +206,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
 
         {/* --- IMAGE CONTENT --- */}
         {post.image && (
-          <div className="w-9/12 mb-3 overflow-hidden border rounded-2xl border-slate-100">
+          <div className="w-9/12 mb-3 overflow-hidden rounded-2xl">
             <img
               src={getImageUrl(post.image)}
               alt={post.title}
@@ -219,13 +216,13 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         )}
 
         {/* --- TITLE --- */}
-        <div className="px-1 mb-1 text-gray-900 text-[17px]">
+        <div className="px-1 mb-1 text-gray-900 text-[18px]">
           <p className="line-clamp-1">{extractTextFromHtml(post.title, 70)}</p>
         </div>
 
         {/* --- TEXT CONTENT --- */}
         <div className="px-1 mb-2">
-          <p className="text-gray-400 text-[15px] leading-relaxed line-clamp-1">
+          <p className="text-gray-400 text-[16px] leading-relaxed line-clamp-1">
             {extractFirstLineFromHtml(post.description, 80)}
           </p>
         </div>
@@ -234,23 +231,23 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         <div className="flex items-center justify-between pt-1">
           <div className="flex gap-3">
             <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 localIsLiked
-                  ? "bg-cyan-50 text-cyan-500"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-emerald-50 text-emerald-600 hover:bg-gray-200"
+                  : "bg-[#F6F6F6] text-gray-400 hover:bg-gray-200 hover:text-gray-900"
               } ${isLikeAnimating ? "scale-110" : "scale-100"}`}
               onClick={handleReaction}
             >
               <ThumbsUp
-                className={`w-4 h-4 transition-transform ${
+                className={`size-4 transition-transform ${
                   localIsLiked ? "fill-current scale-110" : ""
                 }`}
               />
               <span>{localLikes > 0 ? localLikes : "Like"}</span>
             </button>
 
-            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">
-              <MessageSquare className="w-4 h-4" />
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 transition-colors bg-[#F6F6F6] rounded-full hover:bg-gray-200 hover:text-gray-900">
+              <MessageSquare className="size-4" />
               <span>
                 {post.comments?.length > 0 ? post.comments.length : "Comments"}
               </span>
@@ -262,9 +259,9 @@ export default function PostCard({ post, onUpdate, onDelete }) {
               e.preventDefault();
               e.stopPropagation();
             }}
-            className="p-2 transition-colors rounded-full text-slate-400 hover:bg-slate-50"
+            className="p-2 text-gray-400 transition-colors rounded-full hover:bg-gray-100"
           >
-            <Bookmark className="w-5 h-5" />
+            <Bookmark className="size-5" />
           </button>
         </div>
       </Link>

@@ -70,7 +70,7 @@ export default function Home() {
             action={
               user && (
                 <Link to="/posts/new">
-                  <Button className="px-6 py-3 font-semibold text-white transition-all rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 hover:shadow-lg">
+                  <Button className="px-6 py-3 font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-full">
                     Create the first post
                   </Button>
                 </Link>

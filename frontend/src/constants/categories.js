@@ -30,10 +30,10 @@ export const CATEGORIES = {
  * Category style classes for badges and tags
  */
 export const CATEGORY_STYLES = {
-  items: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-transparent",
-  knowledge: "bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent",
-  "emotional-support": "bg-purple-100 text-purple-700 hover:bg-purple-200 border-transparent",
-  general: "bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent",
+  items: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
+  knowledge: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200",
+  "emotional-support": "bg-purple-100 text-purple-700 hover:bg-purple-200",
+  general: "bg-gray-100 text-gray-700 hover:bg-gray-200",
 };
 
 /**
