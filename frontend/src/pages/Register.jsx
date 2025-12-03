@@ -27,6 +27,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
       await register(formData);
       navigate('/');
@@ -38,7 +39,7 @@ export default function Register() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Join ShareCare</CardTitle>
@@ -101,7 +102,7 @@ export default function Register() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary-500 hover:underline">
+            <Link to="/login" className="text-blue-600 hover:underline">
               Login
             </Link>
           </p>

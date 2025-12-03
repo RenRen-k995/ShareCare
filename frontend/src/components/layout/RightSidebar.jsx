@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { TrendingUp, Users, Package } from "lucide-react";
+import { Link } from "react-router-dom";
+import { TrendingUp, Users, Package, Award } from "lucide-react";
 
 export default function RightSidebar() {
+  // Mock data - in a real app, this would come from an API
   const [stats] = useState({
     activeDonors: 89,
     itemsShared: 120,
@@ -9,42 +11,52 @@ export default function RightSidebar() {
   });
 
   return (
-    <aside className="flex-shrink-0 py-5 pr-6 space-y-6 overflow-y-auto w-80">
+    <aside className="flex-shrink-0 py-5 pr-6 space-y-6 overflow-y-auto w-96">
       {/* Community Stats */}
-      <div className="p-6 neu-card neu-card-hover rounded-2xl">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-primary-500" />
+      <div className="p-6 bg-white shadow-md hover:shadow-lg transition-shadow duration-200 rounded-2xl border border-gray-100">
+        <div className="flex items-center mb-4 space-x-2">
+          <TrendingUp className="w-5 h-5 text-emerald-500" />
           <h3 className="font-bold text-gray-900">Community Stats</h3>
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-xl bg-primary-50">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary-500">
+          <div className="flex items-center justify-between p-3 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500">
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-600">Active Donors</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeDonors}</p>
+                <p className="text-xs font-medium text-gray-600">
+                  Active Donors
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.activeDonors}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-primary-50">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary-500">
+          <div className="flex items-center justify-between p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500">
                 <Package className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-600">Items Shared</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.itemsShared}</p>
+                <p className="text-xs font-medium text-gray-600">
+                  Items Shared
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.itemsShared}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="p-3 text-center rounded-xl bg-gray-50">
+          <div className="p-3 text-center bg-slate-50 rounded-xl">
             <p className="mb-1 text-xs text-gray-600">This Week</p>
-            <p className="text-lg font-bold text-primary-600">{stats.weeklyGrowth}</p>
+            <p className="text-lg font-bold text-emerald-600">
+              {stats.weeklyGrowth}
+            </p>
             <p className="text-xs text-gray-500">items re-homed</p>
           </div>
         </div>

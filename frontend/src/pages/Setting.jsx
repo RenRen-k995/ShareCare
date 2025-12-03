@@ -175,7 +175,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
               value={formData.username}
               onChange={handleChange}
               placeholder="How should we call you?"
-              className="border-gray-200 rounded-xl focus:border-primary-500 focus:ring-primary-500"
+              className="border-gray-200 rounded-xl focus:border-cyan-400 focus:ring-cyan-400"
             />
             <p className="text-xs text-gray-400">
               This name will be displayed on your profile and posts.
@@ -193,7 +193,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
               value={formData.fullName}
               onChange={handleChange}
               placeholder="e.g. John Doe"
-              className="h-12 transition-all border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:border-primary-500 focus:ring-primary-500"
+              className="h-12 transition-all border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:border-cyan-400 focus:ring-cyan-400"
             />
             <p className="pl-1 text-xs text-gray-400">
               Your real name, useful for verifications.
@@ -229,7 +229,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
                     value={option.value}
                     checked={formData.gender === option.value}
                     onChange={handleChange}
-                    className="w-4 h-4 border-gray-300 text-primary-500 focus:ring-primary-500"
+                    className="w-4 h-4 border-gray-300 text-cyan-500 focus:ring-cyan-400"
                   />
                   <span className="text-sm text-gray-700">{option.label}</span>
                 </label>
@@ -245,7 +245,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
               onChange={handleChange}
               placeholder="Tell us a little bit about yourself..."
               rows={4}
-              className="border-gray-200 resize-none rounded-xl focus:border-primary-500 focus:ring-primary-500"
+              className="border-gray-200 resize-none rounded-xl focus:border-cyan-400 focus:ring-cyan-400"
               maxLength={500}
             />
             <div className="flex justify-between text-xs text-gray-400">
@@ -260,7 +260,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
       <div className="flex items-center justify-between pt-6 border-t border-gray-100">
         <div className="flex-1">
           {message && (
-            <div className="flex items-center gap-2 text-sm text-primary-600 animate-in fade-in">
+            <div className="flex items-center gap-2 text-sm text-emerald-600 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4" /> {message}
             </div>
           )}
@@ -273,7 +273,7 @@ const EditProfileForm = ({ user, onUpdate, loading, message, error }) => {
         <Button
           type="submit"
           disabled={loading}
-          className="rounded-full px-8 font-bold min-w-[120px]"
+          className="rounded-full bg-cyan-400 hover:bg-cyan-500 text-white px-8 font-bold min-w-[120px]"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -376,7 +376,7 @@ const SecurityForm = ({ user, onUpdateUser }) => {
 
         {/* Feedback Messages */}
         {message && (
-          <div className="p-3 text-sm text-center border rounded-lg bg-primary-50 text-primary-600 border-primary-100">
+          <div className="p-3 text-sm text-center border rounded-lg bg-emerald-50 text-emerald-600 border-emerald-100">
             <CheckCircle2 className="inline w-4 h-4 mr-2" /> {message}
           </div>
         )}
@@ -585,7 +585,7 @@ export default function Settings() {
           {/* Left Sidebar - Navigation 
               Added: bg-white, rounded-[2rem], border, shadow, sticky 
           */}
-          <aside className="sticky top-8 w-full md:w-64 shrink-0 z-10 neu-card rounded-2xl overflow-hidden">
+          <aside className="sticky top-8 w-full md:w-64 shrink-0 z-10 bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-6">
               <h1 className="px-2 mb-6 text-2xl font-extrabold text-gray-900">
                 Settings
@@ -599,13 +599,20 @@ export default function Settings() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
-                        isActive
-                          ? "neu-pressed text-primary-600"
-                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
+                      className={`
+                        w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all duration-200
+                        ${
+                          isActive
+                            ? "bg-slate-50 text-cyan-600 ring-1 ring-slate-100"
+                            : "text-gray-500 hover:bg-slate-50 hover:text-gray-900"
+                        }
+                      `}
                     >
-                      <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary-500" : "text-gray-400"}`} />
+                      <Icon
+                        className={`w-5 h-5 shrink-0 ${
+                          isActive ? "text-cyan-500" : "text-gray-400"
+                        }`}
+                      />
                       {tab.label}
                     </button>
                   );
@@ -614,8 +621,10 @@ export default function Settings() {
             </div>
           </aside>
 
-          {/* Main Content Area */}
-          <div className="flex-1 w-full min-w-0 neu-card rounded-2xl overflow-hidden">
+          {/* Main Content Area 
+              Added: bg-white, rounded-[2rem], border, shadow 
+          */}
+          <div className="flex-1 w-full min-w-0 bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-8 md:p-10">
               {activeTab === "profile" && (
                 <EditProfileForm
