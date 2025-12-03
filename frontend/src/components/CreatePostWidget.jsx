@@ -83,29 +83,21 @@ export default function CreatePostWidget() {
       setError("Please enter some content");
       return;
     }
-
     if (content.length > MAX_LENGTH) {
       setError(`Content exceeds ${MAX_LENGTH} characters`);
       return;
     }
-
     try {
       setLoading(true);
       setError("");
-
       const postData = {
         title: content.substring(0, 100) || "Untitled Post",
         description: content,
         category: category,
         image: coverImage,
       };
-
       await postService.createPost(postData);
-
-      // Reset form
       handleCancel();
-
-      // Reload the page to show new post
       window.location.reload();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to create post");
@@ -116,38 +108,23 @@ export default function CreatePostWidget() {
 
   return (
     <>
-      <div className="p-6 mb-4 bg-white shadow-md hover:shadow-lg transition-shadow duration-200 rounded-2xl border border-gray-100">
-        <div className="flex items-start space-x-4">
-          {/* User Avatar */}
-          <Avatar
-            src={user?.avatar}
-            alt={user?.username}
-            fallback={user?.username}
-            size="lg"
-          />
-
-          {/* Input Area */}
+      <div className="p-6 mb-4 neu-card neu-card-hover rounded-2xl">
+        <div className="flex items-start gap-4">
+          <Avatar src={user?.avatar} alt={user?.username} fallback={user?.username} size="lg" />
           <div className="flex-1">
             {!isExpanded ? (
               <button
                 onClick={handleTextareaClick}
-                className="w-full px-6 py-4 text-left text-gray-400 transition-colors border-2 border-transparent cursor-pointer bg-slate-50 hover:bg-slate-100 rounded-2xl hover:border-emerald-200"
+                className="w-full px-6 py-4 text-left text-gray-400 transition-all cursor-pointer bg-gray-50 neu-input rounded-2xl hover:bg-gray-100"
               >
                 What would you like to share today?
               </button>
             ) : (
               <div className="space-y-4">
-                {/* Error Message */}
                 <ErrorMessage message={error} className="rounded-lg" />
-
-                {/* Cover Image Preview */}
                 {coverImagePreview && (
-                  <div className="relative w-6/12 overflow-hidden border rounded-xl border-slate-200">
-                    <img
-                      src={coverImagePreview}
-                      alt="Cover"
-                      className="object-cover w-full h-48"
-                    />
+                  <div className="relative w-6/12 overflow-hidden border rounded-xl border-gray-200">
+                    <img src={coverImagePreview} alt="Cover" className="object-cover w-full h-48" />
                     <button
                       onClick={handleRemoveImage}
                       className="absolute p-1 text-white transition-colors bg-black rounded-full top-2 right-2 bg-opacity-60 hover:bg-opacity-80"
@@ -156,15 +133,13 @@ export default function CreatePostWidget() {
                     </button>
                   </div>
                 )}
-
-                {/* Text Content */}
                 <div className="relative">
                   <textarea
                     ref={textareaRef}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Share your thoughts, item details, or support message..."
-                    className="w-full px-6 py-4 text-gray-900 transition-colors border-2 border-transparent resize-none bg-[#F5F7F7] hover:bg-slate-100 rounded-2xl focus:outline-none focus:border-emerald-200 focus:bg-white"
+                    className="w-full px-6 py-4 text-gray-900 transition-all border-2 border-transparent resize-none bg-gray-50 neu-input rounded-2xl focus:outline-none focus:border-primary-500 focus:bg-white"
                     rows={6}
                     maxLength={MAX_LENGTH}
                     autoFocus
@@ -173,22 +148,17 @@ export default function CreatePostWidget() {
                     {content.length}/{MAX_LENGTH}
                   </div>
                 </div>
-
-                {/* Actions Row */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {/* Image Upload Button */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-4">
                     <button
                       onClick={handleImageSelect}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 transition-colors rounded-lg hover:bg-emerald-50 hover:text-emerald-600"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 transition-colors rounded-lg hover:bg-primary-50 hover:text-primary-600"
                     >
                       <Image className="w-5 h-5" />
                       <span>Image</span>
                     </button>
-
-                    {/* Category Dropdown */}
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="w-[180px] h-9 border-transparent bg-slate-50 hover:bg-slate-100">
+                      <SelectTrigger className="w-[180px] h-9 border-transparent bg-gray-50">
                         <SelectValue placeholder="Category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -200,20 +170,13 @@ export default function CreatePostWidget() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Action Buttons */}
                   <div className="flex gap-2">
-                    <Button
-                      onClick={handleCancel}
-                      variant="outline"
-                      className="rounded-full"
-                      disabled={loading}
-                    >
+                    <Button onClick={handleCancel} variant="outline" className="rounded-full" disabled={loading}>
                       Cancel
                     </Button>
                     <Button
                       onClick={handleSubmit}
-                      className="text-white transition-all rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 hover:shadow-lg"
+                      className="rounded-full"
                       disabled={loading || !content.trim()}
                     >
                       {loading ? "Posting..." : "Share"}
@@ -226,7 +189,6 @@ export default function CreatePostWidget() {
         </div>
       </div>
 
-      {/* Crop Modal */}
       {isCropModalOpen && (
         <CropModal
           imageSrc={coverImagePreview}

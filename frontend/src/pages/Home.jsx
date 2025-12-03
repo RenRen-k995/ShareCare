@@ -5,11 +5,7 @@ import postService from "../services/postService";
 import PostCard from "../components/PostCard";
 import MainLayout from "../components/layout/MainLayout";
 import CreatePostWidget from "../components/CreatePostWidget";
-import {
-  ErrorMessage,
-  EmptyState,
-  PageLoadingState,
-} from "../components/common";
+import { ErrorMessage, EmptyState, PageLoadingState } from "../components/common";
 import { Button } from "../components/ui/button";
 
 export default function Home() {
@@ -23,16 +19,11 @@ export default function Home() {
     try {
       setLoading(true);
       const params = {};
-
-      // Get category from URL params
       const categoryParam = searchParams.get("category");
       if (categoryParam) {
         params.category = categoryParam;
       }
-
-      // Default to showing available posts
       params.status = "available";
-
       const data = await postService.getPosts(params);
       setPosts(data.posts || []);
     } catch (err) {
@@ -55,13 +46,8 @@ export default function Home() {
   return (
     <MainLayout>
       <div className="py-5">
-        {/* Create Post Widget */}
         {user && <CreatePostWidget />}
-
-        {/* Error Message */}
         <ErrorMessage message={error} className="mb-6 rounded-xl" />
-
-        {/* Posts Feed */}
         {loading ? (
           <PageLoadingState message="Loading posts..." />
         ) : posts.length === 0 ? (
@@ -70,7 +56,7 @@ export default function Home() {
             action={
               user && (
                 <Link to="/posts/new">
-                  <Button className="px-6 py-3 font-semibold text-white transition-all rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 hover:shadow-lg">
+                  <Button className="px-6 py-3 font-semibold rounded-full">
                     Create the first post
                   </Button>
                 </Link>
