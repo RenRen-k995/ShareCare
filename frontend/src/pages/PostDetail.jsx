@@ -241,25 +241,27 @@ export default function PostDetail() {
   return (
     <MainLayout rightSidebar={<CreatorProfile author={post.author} />}>
       <div className="pb-32">
-        <div className="sticky top-0 z-20 pt-6 pb-4 bg-background">
+        {/* ... Header & Card ... */}
+        <div className="sticky top-0 z-20 pt-6 pb-4 bg-[#F5F7F7]">
           <h2 className="ml-8 text-sm font-bold tracking-wide text-gray-500 uppercase">
             Article Details
           </h2>
         </div>
 
-        <div className="neu-card rounded-3xl p-4 md:p-8 mb-6">
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-            <h1 className="text-2xl md:text-4xl font-extrabold leading-tight tracking-tight text-gray-900">
+        <div className="bg-white rounded-[2rem] p-8 mb-6 shadow-sm border border-gray-100">
+          <div className="flex flex-row justify-between">
+            <h1 className="mb-4 text-4xl font-extrabold leading-tight tracking-tight text-gray-900">
               {post.title}
             </h1>
             <div className="flex items-center justify-between">
+              {/* Contact Button for Available Items */}
               {post.category === "items" &&
                 post.status === "available" &&
                 user &&
                 post.author?._id !== user.id && (
                   <button
                     onClick={handleContactToReceive}
-                    className="flex items-center gap-2 px-6 py-2 text-xs font-semibold text-white transition-all bg-primary-500 rounded-full hover:bg-primary-600"
+                    className="flex items-center gap-2 px-6 py-2 text-xs font-semibold text-white transition-all bg-black rounded-full shadow-md hover:bg-gray-800 hover:shadow-lg"
                   >
                     <Send className="w-4 h-4" />
                     <span>Contact</span>
@@ -268,31 +270,31 @@ export default function PostDetail() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center mb-8 text-xs font-medium tracking-wide text-gray-400 gap-2">
+          <div className="flex items-center mb-8 text-xs font-medium tracking-wide text-gray-400">
             <span>{formatDate(post.createdAt)}</span>
-            <span>·</span>
+            <span className="mx-2">·</span>
             <span className="text-gray-500 uppercase">{post.category}</span>
-            <span>·</span>
+            <span className="mx-2">·</span>
             <div className="flex items-center gap-2">
               {post.category === "items" && post.status === "available" && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border rounded-full text-primary-600 border-primary-200 bg-primary-50">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border rounded-full text-emerald-600 border-emerald-200 bg-emerald-50">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                   Available
                 </div>
               )}
               {post.category === "items" && post.status === "unavailable" && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-primary-500 border border-primary-500 rounded-full">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-blue-500 border border-blue-500 rounded-full">
                   <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                   Donated
                 </div>
               )}
             </div>
-            <span>·</span>
+            <span className="mx-2">·</span>
             <span>{post.viewCount || 0} views</span>
           </div>
 
           {post.image && (
-            <div className="w-full aspect-[2] rounded-xl overflow-hidden bg-gray-100 mb-10 neu-card">
+            <div className="w-full aspect-[2] rounded-xl overflow-hidden bg-gray-100 mb-10 shadow-md border border-gray-100">
               <img
                 src={getImageUrl(post.image)}
                 alt={post.title}
@@ -302,38 +304,50 @@ export default function PostDetail() {
           )}
 
           <div
-            className="mb-12 leading-relaxed prose prose-lg text-gray-800 max-w-none [&_img]:max-w-[600px] [&_img]:w-[60%] [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-6 [&_img]:mx-auto [&_img]:block"
+            className="mb-12 leading-relaxed prose prose-lg text-gray-800 max-w-none [&_img]:max-w-[600px] [&_img]:w-[60%] [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-6 [&_img]:mx-auto [&_img]:block [&_img]:shadow-md [&_img]:border [&_img]:border-gray-100"
             dangerouslySetInnerHTML={{ __html: post.description }}
           />
 
           {/* Main Post Reaction Buttons */}
-          <div className="flex flex-wrap justify-center gap-4 pt-3 mt-2">
+          <div className="flex justify-center gap-4 pt-3 mt-2">
             <button
               onClick={handleReaction}
-              className={`flex items-center justify-center gap-3 px-8 md:px-12 py-3 rounded-3xl transition-all duration-200 font-medium w-full sm:w-56 ${
+              className={`flex items-center justify-center gap-3 px-12 py-3 rounded-3xl transition-all duration-200 font-medium shadow-sm w-56 ${
                 userReacted
-                  ? "bg-primary-50 text-primary-600 border border-primary-500"
-                  : "bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200"
+                  ? "bg-emerald-50 text-emerald-600 border border-emerald-500 hover:shadow-md"
+                  : "bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 hover:text-gray-800"
               }`}
             >
-              <ThumbsUp className={`w-5 h-5 ${userReacted ? "fill-current" : ""}`} />
-              <span className="text-lg font-bold">{post.reactions?.length || 0}</span>
+              <ThumbsUp
+                className={`w-5 h-5 ${userReacted ? "fill-current" : ""}`}
+              />
+              <span className="text-lg font-bold">
+                {post.reactions?.length || 0}
+              </span>
             </button>
 
-            <button className="flex items-center justify-center w-full gap-3 px-8 font-medium text-gray-500 transition-all border border-gray-200 bg-gray-50 rounded-3xl hover:bg-gray-100 sm:w-56 md:px-12 py-3">
+            <button className="flex items-center justify-center w-56 gap-3 px-12 font-medium text-gray-500 transition-all border border-gray-200 shadow-sm bg-gray-50 rounded-3xl hover:bg-gray-100 hover:border-gray-300 hover:shadow-md hover:text-gray-800">
               <Bookmark className="w-5 h-5" />
               <span className="text-lg font-bold">Save</span>
             </button>
           </div>
         </div>
 
-        {/* Comments Section */}
+        {/* --- Comments Section --- */}
+
+        {/* 1. Main Inline Input */}
         <div
           ref={commentInputRef}
-          className="neu-card rounded-3xl p-4 md:p-6 mb-6"
+          className="bg-white rounded-[2rem] p-6 mb-6 shadow-sm border border-gray-100"
         >
+          {/* ... Input Code ... */}
           <div className="flex gap-4">
-            <Avatar src={user?.avatar} alt={user?.username} fallback={user?.username} size="md" />
+            <Avatar
+              src={user?.avatar}
+              alt={user?.username}
+              fallback={user?.username}
+              size="md"
+            />
             <div className="relative flex-1">
               <textarea
                 ref={mainTextareaRef}
@@ -344,19 +358,19 @@ export default function PostDetail() {
                   e.target.style.height = e.target.scrollHeight + "px";
                 }}
                 placeholder="Share your thoughts..."
-                className="w-full neu-input rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none min-h-[48px] text-gray-700 placeholder:text-gray-400 border-2 border-transparent focus:border-primary-500 overflow-hidden"
+                className="w-full bg-gray-50 rounded-[1.2rem] px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all resize-none min-h-[48px] text-gray-700 placeholder:text-gray-400 border-2 border-transparent focus:border-emerald-400 overflow-hidden"
                 rows={1}
               />
               <div className="absolute flex gap-3 text-gray-400 right-3 top-3">
                 <Smile className="w-5 h-5 transition-colors cursor-pointer hover:text-yellow-500" />
-                <ImageIcon className="w-5 h-5 transition-colors cursor-pointer hover:text-primary-500" />
+                <ImageIcon className="w-5 h-5 transition-colors cursor-pointer hover:text-blue-500" />
               </div>
             </div>
             {newComment.trim() && (
               <Button
                 onClick={handleCommentSubmit}
                 size="icon"
-                className="w-12 h-12 rounded-full shrink-0"
+                className="w-12 h-12 rounded-full bg-cyan-400 hover:bg-cyan-500 shrink-0"
               >
                 <Send className="w-5 h-5 text-white" />
               </Button>
@@ -364,35 +378,52 @@ export default function PostDetail() {
           </div>
         </div>
 
-        {/* Comments List Header */}
+        {/* 2. Comments List Header */}
         <div className="flex items-center justify-between px-4 mb-4">
           <h3 className="text-lg font-bold text-gray-900">
-            All Comments <span className="ml-1 text-sm font-normal text-gray-400">{comments.length}</span>
+            All Comments{" "}
+            <span className="ml-1 text-sm font-normal text-gray-400">
+              {comments.length}
+            </span>
           </h3>
           <button
-            onClick={() => setSortMethod((prev) => (prev === "newest" ? "top" : "newest"))}
+            onClick={() =>
+              setSortMethod((prev) => (prev === "newest" ? "top" : "newest"))
+            }
             className="flex items-center text-xs font-medium text-gray-500 hover:text-gray-900"
           >
-            {sortMethod === "newest" ? "Newest" : "Top"} <ChevronDown className="w-3 h-3 ml-1" />
+            {sortMethod === "newest" ? "Newest" : "Top"}{" "}
+            <ChevronDown className="w-3 h-3 ml-1" />
           </button>
         </div>
 
-        {/* Comments List */}
+        {/* 3. Comments List */}
         <div className="space-y-4">
           {comments.length === 0 ? (
-            <div className="py-10 text-sm text-center text-gray-400">No comments yet. Be the first!</div>
+            <div className="py-10 text-sm text-center text-gray-400">
+              No comments yet. Be the first!
+            </div>
           ) : (
             comments.map((comment) => {
               const isLiked = comment.likes?.includes(user?.id || user?._id);
               const likeCount = comment.likes?.length || 0;
-              const isOwner = user && (user.id === comment.author?._id || user._id === comment.author?._id);
+              const isOwner =
+                user &&
+                (user.id === comment.author?._id ||
+                  user._id === comment.author?._id);
 
               return (
-                <div key={comment._id} className="p-5 neu-card rounded-2xl group">
+                <div
+                  key={comment._id}
+                  className="p-5 bg-white border shadow-sm rounded-2xl border-gray-50 group"
+                >
                   <div className="flex gap-4">
                     <div className="overflow-hidden bg-gray-100 rounded-full w-9 h-9 shrink-0">
                       {comment.author?.avatar ? (
-                        <img src={comment.author.avatar} className="object-cover w-full h-full" />
+                        <img
+                          src={comment.author.avatar}
+                          className="object-cover w-full h-full"
+                        />
                       ) : (
                         <div className="flex items-center justify-center w-full h-full text-xs font-bold text-gray-400">
                           {comment.author?.username?.[0].toUpperCase()}
@@ -402,24 +433,36 @@ export default function PostDetail() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-gray-900">{comment.author?.username}</span>
-                          <span className="text-xs text-gray-400">{formatTimeAgo(comment.createdAt)}</span>
+                          <span className="text-sm font-bold text-gray-900">
+                            {comment.author?.username}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {formatTimeAgo(comment.createdAt)}
+                          </span>
                         </div>
+
+                        {/* 3 Dots Menu */}
                         {isOwner && (
                           <div className="relative">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setActiveCommentMenu(activeCommentMenu === comment._id ? null : comment._id);
+                                setActiveCommentMenu(
+                                  activeCommentMenu === comment._id
+                                    ? null
+                                    : comment._id
+                                );
                               }}
                               className="p-1 text-gray-400 transition-colors rounded-full hover:bg-gray-100 hover:text-gray-600"
                             >
                               <MoreHorizontal className="w-4 h-4" />
                             </button>
                             {activeCommentMenu === comment._id && (
-                              <div className="absolute right-0 z-10 py-1 mt-1 bg-white border border-gray-100 shadow-xl w-28 rounded-xl">
+                              <div className="absolute right-0 z-10 py-1 mt-1 bg-white border border-gray-100 shadow-xl w-28 rounded-xl animate-in fade-in zoom-in-95">
                                 <button
-                                  onClick={() => handleDeleteComment(comment._id)}
+                                  onClick={() =>
+                                    handleDeleteComment(comment._id)
+                                  }
                                   className="flex items-center w-full gap-2 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -429,18 +472,30 @@ export default function PostDetail() {
                           </div>
                         )}
                       </div>
-                      <p className="text-gray-700 text-[15px] leading-relaxed mb-3 whitespace-pre-wrap">{comment.content}</p>
+
+                      <p className="text-gray-700 text-[15px] leading-relaxed mb-3 whitespace-pre-wrap">
+                        {comment.content}
+                      </p>
+
+                      {/* Comment Actions - Updated Wrapper Color */}
                       <div className="flex gap-3">
                         <button
                           onClick={() => handleCommentLike(comment._id)}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                            isLiked ? "text-primary-500 hover:bg-gray-100" : "text-gray-500 hover:bg-gray-100"
+                            isLiked
+                              ? "text-cyan-500 hover:bg-[#F5F7F7]"
+                              : "text-gray-500 hover:bg-[#F5F7F7] hover:text-gray-700"
                           }`}
                         >
-                          <ThumbsUp className={`w-3.5 h-3.5 ${isLiked ? "fill-current" : ""}`} />
+                          <ThumbsUp
+                            className={`w-3.5 h-3.5 ${
+                              isLiked ? "fill-current" : ""
+                            }`}
+                          />
                           <span>{likeCount > 0 ? likeCount : "Like"}</span>
                         </button>
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 hover:bg-gray-100 transition-all">
+
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 hover:bg-[#F5F7F7] hover:text-gray-700 transition-all">
                           <MessageSquare className="w-3.5 h-3.5" />
                           <span>Reply</span>
                         </button>
@@ -453,25 +508,33 @@ export default function PostDetail() {
           )}
         </div>
 
-        {/* Sticky Footer */}
+        {/* ... Sticky Footer ... */}
         <div
           className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-3xl transition-all duration-300 z-50 ${
-            showStickyFooter ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0 pointer-events-none"
+            showStickyFooter
+              ? "translate-y-0 opacity-100"
+              : "translate-y-20 opacity-0 pointer-events-none"
           }`}
         >
           <div
             className={`flex items-end gap-3 p-3 border-2 rounded-2xl shadow-xl bg-white/95 backdrop-blur-md transition-all ${
-              newComment.trim() ? "border-primary-500" : "border-gray-200"
+              newComment.trim() ? "border-emerald-400" : "border-gray-200"
             }`}
           >
-            <Avatar src={user?.avatar} alt={user?.username} fallback={user?.username} size="sm" />
+            <Avatar
+              src={user?.avatar}
+              alt={user?.username}
+              fallback={user?.username}
+              size="sm"
+            />
             <textarea
               ref={stickyTextareaRef}
               value={newComment}
               onChange={(e) => {
                 setNewComment(e.target.value);
                 e.target.style.height = "auto";
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                e.target.style.height =
+                  Math.min(e.target.scrollHeight, 120) + "px";
               }}
               placeholder="Come share your thoughts!"
               className="flex-1 px-2 py-1 text-sm text-gray-700 bg-transparent resize-none focus:outline-none max-h-[120px] overflow-y-auto"
@@ -480,18 +543,23 @@ export default function PostDetail() {
             <div className="flex items-center gap-3 pb-1">
               <Smile className="w-5 h-5 text-gray-400 cursor-pointer hover:text-yellow-500" />
               {newComment.trim() ? (
-                <Button onClick={handleCommentSubmit} size="sm" className="h-8 px-4 text-xs font-bold rounded-full">
+                <Button
+                  onClick={handleCommentSubmit}
+                  size="sm"
+                  className="h-8 px-4 text-xs font-bold text-white rounded-full bg-emerald-500 hover:bg-emerald-600"
+                >
                   <Send className="w-3 h-3 mr-1" />
                   Post
                 </Button>
               ) : (
-                <ImageIcon className="w-5 h-5 text-gray-400 cursor-pointer hover:text-primary-500" />
+                <ImageIcon className="w-5 h-5 text-gray-400 cursor-pointer hover:text-blue-500" />
               )}
             </div>
           </div>
         </div>
       </div>
 
+      {/* Exchange Request Modal */}
       {showRequestModal && post && (
         <ExchangeRequestModal
           isOpen={showRequestModal}

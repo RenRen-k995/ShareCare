@@ -45,6 +45,7 @@ export default function CreatePost() {
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
+        // Don't set coverImage yet, wait for crop
         const reader = new FileReader();
         reader.onloadend = () => {
           setCoverImagePreview(reader.result);
@@ -58,10 +59,15 @@ export default function CreatePost() {
 
   const handleCropConfirm = async (croppedImageUrl) => {
     try {
+      // 1. Update the preview URL
       setFormData({ ...formData, coverImageUrl: croppedImageUrl });
+
+      // 2. CRITICAL FIX: Convert the cropped blob URL back to a File object
+      // This ensures the 'coverImage' state holds the CROPPED image, not the original
       const response = await fetch(croppedImageUrl);
       const blob = await response.blob();
       const file = new File([blob], "cover_image.jpg", { type: "image/jpeg" });
+
       setCoverImage(file);
       setIsCropModalOpen(false);
     } catch (err) {
@@ -74,19 +80,22 @@ export default function CreatePost() {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
+      // Validate content length
       if (formData.content.length > 10000) {
         setError(
-          `Content is too long (${formData.content.length.toLocaleString()} characters). Maximum allowed is 10,000 characters.`
+          `Content is too long (${formData.content.length.toLocaleString()} characters). Maximum allowed is 10,000 characters. Please remove some text.`
         );
         setLoading(false);
         return;
       }
+
       const postData = {
         title: formData.title,
         description: formData.content,
         category: formData.channel,
-        image: coverImage,
+        image: coverImage, // This now contains the cropped file
       };
       await postService.createPost(postData);
       navigate("/");
@@ -103,32 +112,47 @@ export default function CreatePost() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 h-16 neu-card border-b border-gray-100">
-        <div className="flex items-center justify-between h-full max-w-6xl px-4 md:px-6 mx-auto">
-          <h1 className="text-lg md:text-xl font-bold text-gray-900">Creation Center</h1>
-          <Avatar src={user?.avatar} alt={user?.username} fallback={user?.username} size="sm" />
+    <div className="flex flex-col min-h-screen bg-[#F5F7F7]">
+      {/* --- Sticky Header --- */}
+      <header className="sticky top-0 z-50 h-16 bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between h-full max-w-6xl px-6 mx-auto">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-gray-900">Creation Center</h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Avatar
+                src={user?.avatar}
+                alt={user?.username}
+                fallback={user?.username}
+                size="sm"
+              />
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 w-full max-w-4xl p-4 md:p-6 pb-32 mx-auto">
+      {/* --- Main Content --- */}
+      <main className="flex-1 w-full max-w-4xl p-6 pb-32 mx-auto">
         <ErrorMessage message={error} className="mb-4 rounded-lg" />
 
-        <div className="neu-card rounded-2xl p-4 md:p-8 min-h-[80vh]">
+        {/* Main White Card Container */}
+        {/* IMPORTANT: No overflow-hidden here, or sticky breaks */}
+        <div className="bg-white rounded-2xl p-8 min-h-[80vh] shadow-md border border-gray-100">
+          {/* Header Row: Title + Drafts */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg md:text-xl font-bold text-gray-900">New Article</h2>
+            <h2 className="text-xl font-bold text-gray-900">New Article</h2>
           </div>
 
-          {/* Title Input */}
+          {/* 1. Title Input - Standalone */}
           <div className="relative mb-6">
             <input
               type="text"
               placeholder="Enter a title"
               value={formData.title}
               onChange={handleTitleChange}
-              className="w-full px-4 py-3 text-xl md:text-2xl font-medium text-gray-900 placeholder-gray-300 transition-colors border border-gray-200 outline-none rounded-xl neu-input focus:border-primary-500"
+              className="w-full px-4 py-3 text-2xl font-medium text-gray-900 placeholder-gray-300 transition-colors border border-gray-200 outline-none rounded-xl focus:border-gray-400"
               maxLength={120}
             />
             <span className="absolute text-xs text-gray-300 pointer-events-none right-4 top-4">
@@ -136,7 +160,7 @@ export default function CreatePost() {
             </span>
           </div>
 
-          {/* Editor */}
+          {/* 2. The Editor "Box" Component */}
           <div className="mb-10">
             <RichTextEditor
               content={formData.content}
@@ -146,7 +170,7 @@ export default function CreatePost() {
             />
           </div>
 
-          {/* Settings Section */}
+          {/* 3. Settings Section */}
           <div className="max-w-2xl space-y-8">
             {/* Channel */}
             <div>
@@ -155,9 +179,11 @@ export default function CreatePost() {
               </label>
               <Select
                 value={formData.channel}
-                onValueChange={(value) => setFormData({ ...formData, channel: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, channel: value })
+                }
               >
-                <SelectTrigger className="w-full transition-colors border-transparent rounded-xl bg-gray-50 h-11">
+                <SelectTrigger className="w-full transition-colors border-transparent rounded-lg bg-gray-50 hover:bg-gray-100 h-11">
                   <SelectValue placeholder="Select a channel" />
                 </SelectTrigger>
                 <SelectContent>
@@ -173,16 +199,28 @@ export default function CreatePost() {
             {/* Cover Image */}
             <div>
               <label className="flex flex-col block mb-2 text-base font-bold text-gray-900">
-                <div>Add Cover <span className="text-red-500">*</span></div>
-                <span className="text-xs font-normal text-gray-400">
-                  Add a cover image that fits your content to attract more views.
+                <div>
+                  Add Cover <span className="text-red-500">*</span>
+                </div>
+                <span className="ml-2 text-xs font-normal text-gray-400">
+                  Add a cover image that fits your content to attract more
+                  views.
                 </span>
               </label>
+
               {formData.coverImageUrl ? (
-                <div className="relative w-full sm:w-[300px] overflow-hidden rounded-xl group aspect-video bg-gray-50 border border-gray-100">
-                  <img src={formData.coverImageUrl} alt="Cover" className="object-cover w-full h-full" />
+                <div className="relative w-[300px] overflow-hidden rounded-lg group aspect-video bg-gray-50 border border-gray-100">
+                  <img
+                    src={formData.coverImageUrl}
+                    alt="Cover"
+                    className="object-cover w-full h-full"
+                  />
                   <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/40 group-hover:opacity-100">
-                    <Button variant="secondary" size="sm" onClick={handleAddCover}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleAddCover}
+                    >
                       Change
                     </Button>
                   </div>
@@ -191,9 +229,11 @@ export default function CreatePost() {
                 <button
                   type="button"
                   onClick={handleAddCover}
-                  className="flex flex-col items-center justify-center w-full sm:w-[300px] aspect-video transition-all bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-400"
+                  className="flex flex-col items-center justify-center w-[300px] aspect-video transition-all bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-400"
                 >
-                  <span className="text-3xl font-light text-gray-300 mb-2">+</span>
+                  <div className="flex items-center justify-center w-8 h-8 mb-2">
+                    <span className="text-3xl font-light text-gray-300">+</span>
+                  </div>
                   <span className="text-sm text-gray-400">Add image</span>
                 </button>
               )}
@@ -201,14 +241,17 @@ export default function CreatePost() {
           </div>
 
           {/* Footer Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 mt-12 border-t border-gray-100">
-            <Button variant="secondary" className="w-full sm:w-auto px-8 rounded-full">
+          <div className="flex items-center justify-end gap-4 pt-6 mt-12 border-t border-gray-100">
+            <Button
+              variant="secondary"
+              className="px-8 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200"
+            >
               Preview
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={loading || !formData.title}
-              className="w-full sm:w-auto px-8 rounded-full"
+              className="px-8 text-white rounded-full shadow-md bg-cyan-400 hover:bg-cyan-500"
             >
               {loading ? "Publishing..." : "Publish"}
             </Button>
