@@ -104,7 +104,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         {/* --- HEADER --- */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="overflow-hidden bg-gray-100 rounded-full size-10 shrink-0">
+            <div className="overflow-hidden bg-gray-100 rounded-full size-12 shrink-0">
               {post.author?.avatar ? (
                 <img
                   src={post.author.avatar}
@@ -120,17 +120,17 @@ export default function PostCard({ post, onUpdate, onDelete }) {
 
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-gray-900 text-[15px]">
+                <span className="text-base font-bold text-gray-900">
                   {post.author?.username || "Unknown"}
                 </span>
-                <span className="text-sm text-gray-400">
+                <span className="text-base text-gray-400">
                   {formatTimeAgo(post.createdAt)}
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
                 <Badge
-                  className={`font-normal text-xs px-2.5 py-0.5 h-5 ${getCategoryStyles(
+                  className={`font-normal text-sm px-2.5 py-0.5 h-5 ${getCategoryStyles(
                     post.category
                   )}`}
                 >
@@ -138,7 +138,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                 </Badge>
 
                 {post.category === "items" && post.status === "available" && (
-                  <Badge className="font-normal text-xs px-2.5 py-0.5 h-5 text-emerald-600 bg-emerald-50">
+                  <Badge className="font-normal text-sm px-2.5 py-0.5 h-5 text-emerald-600 bg-emerald-50">
                     Available
                   </Badge>
                 )}
@@ -259,7 +259,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
               e.preventDefault();
               e.stopPropagation();
             }}
-            className="p-2 text-gray-400 transition-colors rounded-full hover:bg-gray-100"
+            className="py-2 px-4 text-gray-400 transition-colors rounded-2xl hover:bg-gray-200 bg-[#F6F6F6] hover:text-gray-900"
           >
             <Bookmark className="size-5" />
           </button>

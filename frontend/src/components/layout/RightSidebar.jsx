@@ -11,7 +11,7 @@ export default function RightSidebar() {
   });
 
   return (
-    <aside className="flex-shrink-0 py-5 pr-6 space-y-6 overflow-y-auto w-80">
+    <aside className="flex-shrink-0 py-5 space-y-6 overflow-y-auto w-96">
       {/* Community Stats */}
       <div className="p-6 bg-white rounded-2xl">
         <div className="flex items-center gap-2 mb-4">
@@ -22,8 +22,8 @@ export default function RightSidebar() {
         <div className="space-y-4">
           <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center size-10 rounded-full bg-emerald-600">
-                <Users className="size-5 text-white" />
+              <div className="flex items-center justify-center rounded-full size-10 bg-emerald-600">
+                <Users className="text-white size-5" />
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-600">
@@ -38,8 +38,8 @@ export default function RightSidebar() {
 
           <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center size-10 rounded-full bg-emerald-600">
-                <Package className="size-5 text-white" />
+              <div className="flex items-center justify-center rounded-full size-10 bg-emerald-600">
+                <Package className="text-white size-5" />
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-600">

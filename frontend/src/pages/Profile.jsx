@@ -58,112 +58,112 @@ export default function Profile() {
     // We pass 'null' to rightSidebar to override the default one,
     // because we are building a custom 2-column layout inside this page
     <MainLayout rightSidebar={null}>
-      <div className="px-16 pt-5 pb-20">
+      <div className="pt-5 pb-20 pr-14">
         {/* --- 1. Profile Header & Banner --- */}
-        <div className="mb-3 overflow-hidden bg-white border border-gray-100 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-[1.2rem]">
+        <div className="mb-5 overflow-hidden bg-white rounded-2xl">
           {/* Banner Area */}
-          <div className="h-48 w-full rounded-t-[1.2rem] bg-gradient-to-r from-emerald-100 via-teal-100 to-blue-100 overflow-hidden relative">
+          <div className="relative w-full h-48 overflow-hidden bg-gradient-to-r from-emerald-100 via-teal-100 to-blue-100">
             {/* Decorative patterns */}
             <div className="absolute top-0 right-0 p-10 opacity-10">
-              <Heart className="w-64 h-64 transform text-emerald-600 rotate-12" />
+              <Heart className="transform size-64 text-cyan-600 rotate-12" />
             </div>
             <div className="absolute bottom-0 left-10 opacity-10">
-              <LayoutGrid className="w-32 h-32 text-blue-600" />
+              <LayoutGrid className="text-blue-600 size-32" />
             </div>
           </div>
 
-          {/* Profile Info Overlay */}
-          <div className="px-8 pb-8">
-            <div className="flex items-end justify-between -mt-12">
-              <div className="flex items-end gap-5">
-                {/* Avatar */}
-                <div className="w-32 h-32 rounded-full bg-white p-1.5 shadow-sm relative z-10">
-                  <Avatar
-                    src={user.avatar}
-                    alt={user.username}
-                    fallback={user.username}
-                    size="3xl"
-                    className="w-full h-full"
-                  />
-                </div>
+          {/* Profile Info Row */}
+          <div className="flex items-start gap-6 px-8 py-4">
+            {/* Avatar - positioned to overlap banner */}
+            <div className="relative -mt-16 shrink-0">
+              <div className="relative z-10 bg-white rounded-full size-32">
+                <Avatar
+                  src={user.avatar}
+                  alt={user.username}
+                  fallback={user.username}
+                  size="3xl"
+                  className="w-full h-full rounded-full"
+                />
+              </div>
+            </div>
 
-                {/* Name & Stats */}
-                <div className="mb-2">
-                  <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-                    {user.fullName || user.username}
-                    {/* Gender Icon */}
-                    {user.gender === "male" && (
-                      <span className="text-blue-500" title="Male">
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="10" cy="14" r="7" />
-                          <line x1="14.5" y1="9.5" x2="21" y2="3" />
-                          <line x1="17" y1="3" x2="21" y2="3" />
-                          <line x1="21" y1="3" x2="21" y2="7" />
-                        </svg>
-                      </span>
-                    )}
-                    {user.gender === "female" && (
-                      <span className="text-pink-500" title="Female">
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="12" cy="8" r="7" />
-                          <line x1="12" y1="15" x2="12" y2="23" />
-                          <line x1="8" y1="19" x2="16" y2="19" />
-                        </svg>
-                      </span>
-                    )}
-                    {user.gender === "other" && (
-                      <span className="text-purple-500" title="Other">
-                        <UserIcon className="w-4 h-4" />
-                      </span>
-                    )}
-                  </h1>
-                  <div className="flex items-center gap-6 mt-1 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-gray-900">
-                        {user.totalLikes || 0}
-                      </span>{" "}
-                      Likes
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-gray-900">3</span>{" "}
-                      Following
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-gray-900">0</span>{" "}
-                      Followers
-                    </div>
-                  </div>
-                </div>
+            {/* Name & Stats - grows to fill space */}
+            <div className="flex flex-col flex-1 min-w-0">
+              {/* Name row with button */}
+              <div className="flex items-center justify-between">
+                <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+                  {user.fullName || user.username}
+                  {/* Gender Icon */}
+                  {user.gender === "male" && (
+                    <span className="text-blue-500" title="Male">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="10" cy="14" r="7" />
+                        <line x1="14.5" y1="9.5" x2="21" y2="3" />
+                        <line x1="17" y1="3" x2="21" y2="3" />
+                        <line x1="21" y1="3" x2="21" y2="7" />
+                      </svg>
+                    </span>
+                  )}
+                  {user.gender === "female" && (
+                    <span className="text-pink-500" title="Female">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="8" r="7" />
+                        <line x1="12" y1="15" x2="12" y2="23" />
+                        <line x1="8" y1="19" x2="16" y2="19" />
+                      </svg>
+                    </span>
+                  )}
+                  {user.gender === "other" && (
+                    <span className="text-purple-500" title="Other">
+                      <UserIcon className="size-4" />
+                    </span>
+                  )}
+                </h1>
+
+                {/* Follow/Edit Button - aligned with name */}
+                <Link to="/settings" className="pt-1 shrink-0">
+                  <Button className="px-6 text-base font-semibold text-white rounded-2xl bg-emerald-400 hover:bg-emerald-500">
+                    <Edit3 className="mr-2 size-5" />
+                    Edit
+                  </Button>
+                </Link>
               </div>
 
-              {/* Edit Profile Button */}
-              <Link to="/settings">
-                <Button
-                  variant="outline"
-                  className="mb-4 text-gray-700 border-gray-300 rounded-full hover:bg-gray-50"
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Edit profile
-                </Button>
-              </Link>
+              {/* Stats row */}
+              <div className="flex items-center gap-6 mt-1 text-gray-400">
+                <div className="flex items-center gap-1">
+                  <span className="text-xl font-bold text-gray-900">
+                    {user.totalLikes || 0}
+                  </span>
+                  <span>Likes</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xl font-bold text-gray-900">3</span>
+                  <span>Following</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xl font-bold text-gray-900">0</span>
+                  <span>Followers</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function Profile() {
             <div className="flex items-center gap-8 px-2 mb-3 border-b border-gray-100">
               <button
                 onClick={() => setActiveTab("posts")}
-                className={`pb-3 text-sm font-bold transition-colors relative ${
+                className={`pb-3 text-lg font-bold transition-colors relative ${
                   activeTab === "posts"
                     ? "text-emerald-600"
                     : "text-gray-400 hover:text-gray-600"
@@ -184,12 +184,12 @@ export default function Profile() {
               >
                 Post
                 {activeTab === "posts" && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-full" />
+                  <div className="absolute bottom-0 left-0 w-full h-1 rounded-full bg-emerald-500" />
                 )}
               </button>
               <button
                 onClick={() => setActiveTab("comments")}
-                className={`pb-3 text-sm font-bold transition-colors relative ${
+                className={`pb-3 text-lg font-bold transition-colors relative ${
                   activeTab === "comments"
                     ? "text-emerald-600"
                     : "text-gray-400 hover:text-gray-600"
@@ -197,12 +197,12 @@ export default function Profile() {
               >
                 Comments
                 {activeTab === "comments" && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-full" />
+                  <div className="absolute bottom-0 left-0 w-full h-1 rounded-full bg-emerald-500" />
                 )}
               </button>
               <button
                 onClick={() => setActiveTab("saved")}
-                className={`pb-3 text-sm font-bold transition-colors relative ${
+                className={`pb-3 text-lg font-bold transition-colors relative ${
                   activeTab === "saved"
                     ? "text-emerald-600"
                     : "text-gray-400 hover:text-gray-600"
@@ -210,7 +210,7 @@ export default function Profile() {
               >
                 Saved
                 {activeTab === "saved" && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-full" />
+                  <div className="absolute bottom-0 left-0 w-full h-1 rounded-full bg-emerald-500" />
                 )}
               </button>
             </div>

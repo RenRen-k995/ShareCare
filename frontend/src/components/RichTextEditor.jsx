@@ -236,9 +236,9 @@ export default function RichTextEditor({
       </div>
 
       {/* Character Counter */}
-      <div className="sticky bottom-0 z-40 bg-white border-t border-gray-100 px-6 py-2 flex justify-between items-center">
+      <div className="sticky bottom-0 z-40 flex items-center justify-between px-6 py-2 bg-white border-t border-gray-100">
         <div
-          className={`text-sm ${
+          className={`text-base ${
             contentLength > maxLength
               ? "text-red-600 font-semibold"
               : showWarning
@@ -252,7 +252,7 @@ export default function RichTextEditor({
           {showWarning && contentLength <= maxLength && " (Approaching limit)"}
         </div>
         {contentLength > maxLength && (
-          <div className="text-xs text-red-500">
+          <div className="text-sm text-red-500">
             Please remove some content or images
           </div>
         )}

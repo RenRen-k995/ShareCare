@@ -56,7 +56,7 @@ export default function ProfileDropdown() {
       {/* Trigger: Avatar */}
       <button
         onClick={toggleDropdown}
-        className="flex items-center justify-center w-10 h-10 overflow-hidden transition-all border-2 border-transparent rounded-full hover:border-cyan-200 focus:outline-none"
+        className="flex items-center justify-center overflow-hidden transition-all border-2 border-transparent rounded-full size-12 hover:border-cyan-200 focus:outline-none"
       >
         {user.avatar ? (
           <img
@@ -75,7 +75,7 @@ export default function ProfileDropdown() {
       {isOpen && (
         <div
           className={`
-            absolute right-0 z-50 w-64 mt-3 origin-top-right bg-white shadow-xl rounded-3xl ring-1 ring-black ring-opacity-5
+            absolute right-0 z-50 w-72 mt-3 origin-top-right bg-white shadow-xl rounded-3xl ring-1 ring-black ring-opacity-5
             transition-all duration-200 ease-out
             ${
               isVisible

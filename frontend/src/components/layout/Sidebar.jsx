@@ -42,7 +42,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex-col hidden bg-white md:flex w-72">
+    <aside className="flex-col hidden bg-white md:flex w-[19.3rem]">
       {/* Logo */}
       <div className="px-6 py-8">
         <Link to="/" className="flex items-center gap-3">
@@ -55,7 +55,7 @@ export default function Sidebar() {
 
       {/* Categories Section */}
       <nav className="flex-1 px-4">
-        <p className="px-4 mb-2 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+        <p className="px-4 mb-2 text-base font-semibold tracking-wider text-gray-400 uppercase">
           Categories
         </p>
         <div className="space-y-1">
@@ -76,9 +76,9 @@ export default function Sidebar() {
                   className={`size-5 mr-3 ${active ? "text-emerald-600" : ""}`}
                 />
                 <div className="flex flex-col">
-                  <span className="text-sm">{item.name}</span>
+                  <span className="text-base">{item.name}</span>
                   {item.label && (
-                    <span className="text-xs text-gray-400">{item.label}</span>
+                    <span className="text-sm text-gray-400">{item.label}</span>
                   )}
                 </div>
               </Link>
@@ -90,7 +90,7 @@ export default function Sidebar() {
         <div className="h-px mx-4 my-4 bg-gray-100" />
 
         {/* Messages Section - Separate from categories */}
-        <p className="px-4 mb-2 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+        <p className="px-4 mb-2 text-base font-semibold tracking-wider text-gray-400 uppercase">
           Communication
         </p>
         <Link
@@ -107,8 +107,8 @@ export default function Sidebar() {
             }`}
           />
           <div className="flex flex-col">
-            <span className="text-sm">Messages</span>
-            <span className="text-xs text-gray-400">Real-time Chat</span>
+            <span className="text-base">Messages</span>
+            <span className="text-sm text-gray-400">Real-time Chat</span>
           </div>
         </Link>
       </nav>

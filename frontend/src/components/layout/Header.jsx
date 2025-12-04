@@ -8,13 +8,13 @@ export default function Header() {
   const isSettingsPage = location.pathname === "/settings";
 
   return (
-    <header className="flex items-center justify-between h-[4.5rem] px-8 py-4 bg-white">
+    <header className="flex items-center justify-between h-[5.3rem] px-8 py-4 bg-white">
       {/* Left side - Only show Logo on Settings page */}
       <div className="flex items-center min-w-[200px]">
         {isSettingsPage && (
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="flex items-center justify-center size-10 bg-emerald-600 rounded-xl transition-transform group-hover:scale-105">
-              <Heart className="size-6 text-white" fill="currentColor" />
+            <div className="flex items-center justify-center transition-transform size-10 bg-emerald-600 rounded-xl group-hover:scale-105">
+              <Heart className="text-white size-6" fill="currentColor" />
             </div>
             <span className="text-2xl font-bold text-gray-900">ShareCare</span>
           </Link>
@@ -24,15 +24,15 @@ export default function Header() {
       {/* Right side - Actions */}
       <div className="flex items-center gap-4">
         {/* Notification Bell */}
-        <button className="relative p-2 text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
-          <Bell className="size-6" strokeWidth={2} />
-          <span className="absolute size-2 bg-red-500 rounded-full top-2 right-2" />
+        <button className="relative flex p-3 justify-center text-gray-500 transition-colors rounded-3xl bg-[#F6F6F6] size-12 hover:bg-gray-200 hover:text-gray-900">
+          <Bell className="size-7" strokeWidth={2} />
+          <span className="absolute right-0 bg-orange-500 rounded-full top-1 size-[0.6rem]" />
         </button>
 
         {/* New Post Button */}
         <Link to="/posts/new">
-          <button className="flex items-center justify-center size-10 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
-            <Plus className="size-6" strokeWidth={2} />
+          <button className="flex items-center justify-center text-gray-500 transition-colors bg-[#F6F6F6] rounded-2xl size-12 hover:bg-gray-200 hover:text-gray-900">
+            <Plus className="size-8" strokeWidth={2} />
           </button>
         </Link>
 

@@ -239,7 +239,10 @@ export default function PostDetail() {
   const userReacted = user && post.reactions?.some((r) => r.user === user.id);
 
   return (
-    <MainLayout rightSidebar={<CreatorProfile author={post.author} />}>
+    <MainLayout
+      rightSidebar={<CreatorProfile author={post.author} />}
+      contentMaxWidth="max-w-[54rem]"
+    >
       <div className="pb-32">
         {/* ... Header & Card ... */}
         <div className="sticky top-0 z-20 pt-8 pb-4 bg-[#F5F7F7]">
