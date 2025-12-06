@@ -140,9 +140,9 @@ export default function Profile() {
 
                 {/* Follow/Edit Button - aligned with name */}
                 <Link to="/settings" className="pt-1 shrink-0">
-                  <Button className="px-6 text-base font-semibold text-white rounded-2xl bg-emerald-400 hover:bg-emerald-500">
+                  <Button className="h-12 px-4 text-base font-semibold text-gray-500 rounded-2xl bg-[#ECEDED] hover:bg-gray-300 hover:text-gray-900">
                     <Edit3 className="mr-2 size-5" />
-                    Edit
+                    Edit Profile
                   </Button>
                 </Link>
               </div>
@@ -239,38 +239,38 @@ export default function Profile() {
           {/* RIGHT COLUMN: Info & Widgets (1/3 width) */}
           <div className="space-y-6">
             {/* Personal Info Card */}
-            <div className="bg-white p-6 rounded-[1.2rem] shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100">
-              <h3 className="mb-4 text-sm font-bold text-gray-900">
+            <div className="bg-white p-6 rounded-[1.2rem] border border-gray-100">
+              <h3 className="mb-4 text-xl font-medium text-gray-900">
                 Personal Information
               </h3>
 
               <div className="mb-4 space-y-4">
-                <div className="flex items-start gap-3 text-sm text-gray-600">
-                  <MessageSquare className="w-4 h-4 mt-0.5 text-gray-400 shrink-0" />
+                <div className="flex items-start gap-3 text-lg text-gray-400">
+                  <MessageSquare className="w-5 h-5 mt-0.5 text-gray-400 shrink-0" />
                   <p className="leading-relaxed break-all">
                     {user.bio || "No bio yet"}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <Calendar className="w-4 h-4 text-gray-400" />
+                <div className="flex items-center gap-3 text-lg text-gray-400">
+                  <Calendar className="w-5 h-5 text-gray-400" />
                   <span>Joined {formatDate(user.createdAt)}</span>
                 </div>
               </div>
-              <div className="h-px mx-4 bg-gray-100" />
-              <div className="pt-4 mt-2 font-mono text-xs text-gray-400 border-t border-gray-50">
+              <div className="h-px mx-4 bg-gray-200" />
+              <div className="pt-4 mt-2 font-mono text-base text-gray-400 border-t border-gray-50">
                 ID: {user.id || user._id}
               </div>
             </div>
 
             {/* Creation Center Widget */}
-            <div className="bg-white p-6 rounded-[1.2rem] shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100">
-              <h3 className="mb-4 text-sm font-bold text-gray-900">
+            <div className="bg-white p-6 rounded-[1.2rem] border border-gray-100">
+              <h3 className="mb-4 text-xl font-bold text-gray-900">
                 Creation Center
               </h3>
               <Link to="/posts/new">
-                <Button className="w-full font-bold text-gray-700 bg-gray-100 border-0 rounded-full shadow-none hover:bg-gray-200">
-                  <Edit3 className="w-4 h-4 mr-2" />
+                <Button className="w-full h-12 text-base font-bold text-gray-500 bg-[#ECEDED] border-0 rounded-full hover:bg-gray-300 hover:text-gray-900">
+                  <Edit3 className="w-5 h-5 mr-2" />
                   My creations
                 </Button>
               </Link>
