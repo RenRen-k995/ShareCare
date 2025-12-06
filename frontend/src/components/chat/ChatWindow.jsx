@@ -514,20 +514,20 @@ export default function ChatWindow({ chat, onBack }) {
                       href={getFileUrl(message.fileUrl)}
                       target="_blank"
                       rel="noreferrer"
-                      className={`flex items-center gap-2 mb-1 p-2 rounded-lg text-sm ${
+                      className={`flex items-center gap-3 p-3 rounded-2xl text-base shadow-sm ${
                         isMine
-                          ? "bg-gradient-to-r from-emerald-300 to-teal-400 hover:from-emerald-400 hover:to-teal-500 text-white"
-                          : "bg-gray-300 hover:bg-gray-400"
+                          ? "bg-emerald-500 hover:bg-emerald-600 text-white rounded-br-sm"
+                          : "bg-white border border-gray-100 hover:bg-gray-50 rounded-bl-sm"
                       }`}
                     >
-                      <div className="p-1.5 bg-white rounded-full text-emerald-500">
-                        <FileText size={16} />
+                      <div className={`p-2 rounded-full ${isMine ? "bg-white/20" : "bg-emerald-100"}`}>
+                        <FileText size={18} className={isMine ? "text-white" : "text-emerald-600"} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">
                           {message.fileName || "Document"}
                         </p>
-                        <p className="text-xs opacity-80">
+                        <p className="text-sm opacity-80">
                           {(message.fileSize / 1024).toFixed(0)} KB
                         </p>
                       </div>
@@ -538,15 +538,15 @@ export default function ChatWindow({ chat, onBack }) {
                   {message.messageType !== "image" &&
                     message.messageType !== "file" && (
                       <div
-                        className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
+                        className={`px-4 py-2.5 rounded-2xl shadow-sm ${
                           isMine
-                            ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-br-none"
-                            : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+                            ? "bg-emerald-500 text-white rounded-br-sm"
+                            : "bg-white text-gray-800 border border-gray-100 rounded-bl-sm"
                         }`}
                       >
                         {/* Text Content */}
                         {message.content && (
-                          <p className="leading-relaxed break-words whitespace-pre-wrap">
+                          <p className="text-base leading-relaxed break-words whitespace-pre-wrap">
                             {message.content}
                           </p>
                         )}
@@ -601,24 +601,24 @@ export default function ChatWindow({ chat, onBack }) {
           </div>
 
           {/* Timestamp & Status */}
-          <div className="flex items-center gap-1 mt-1 mr-1 text-[10px] text-gray-400">
+          <div className="flex items-center gap-1.5 mt-1.5 px-1 text-xs text-gray-400">
             <span>{format(message.createdAt, "p")}</span>
             {isMine && (
               <>
                 {message.readBy?.length > 1 ? (
                   <CheckCheck
-                    size={12}
+                    size={14}
                     className="text-blue-500"
                     title="Read"
                   />
                 ) : message.isDelivered ? (
                   <CheckCheck
-                    size={12}
+                    size={14}
                     className="text-gray-400"
                     title="Delivered"
                   />
                 ) : (
-                  <Check size={12} className="text-gray-400" title="Sent" />
+                  <Check size={14} className="text-gray-400" title="Sent" />
                 )}
               </>
             )}
@@ -630,13 +630,19 @@ export default function ChatWindow({ chat, onBack }) {
 
   if (!chat)
     return (
-      <div className="flex items-center justify-center h-full text-gray-400">
-        Select a conversation
+      <div className="flex flex-col items-center justify-center h-full bg-gray-50/30">
+        <div className="w-20 h-20 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+          <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </div>
+        <p className="text-lg text-gray-400 font-medium">Select a conversation</p>
+        <p className="text-sm text-gray-300 mt-1">Choose a chat from the list to start messaging</p>
       </div>
     );
 
   return (
-    <div className="flex flex-col h-full max-h-full bg-[#F5F7F7] overflow-hidden">
+    <div className="flex flex-col h-full max-h-full bg-gray-50 overflow-hidden">
       {/* Connection Status Banner */}
       {connectionStatus !== "connected" && (
         <div
@@ -655,15 +661,15 @@ export default function ChatWindow({ chat, onBack }) {
       )}
 
       {/* Header */}
-      <div className="z-10 flex items-center justify-between flex-shrink-0 px-6 py-3 bg-white border-b border-gray-100 shadow-sm">
-        <div className="flex items-center gap-3">
+      <div className="z-10 flex items-center justify-between flex-shrink-0 px-5 py-4 bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            className="-ml-2 lg:hidden"
+            className="-ml-2 lg:hidden hover:bg-gray-100 rounded-full"
             onClick={onBack}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Button>
           <Avatar
             src={otherUser?.avatar}
@@ -674,10 +680,10 @@ export default function ChatWindow({ chat, onBack }) {
             isOnline={isOnline}
           />
           <div>
-            <h3 className="font-bold text-gray-900">
+            <h3 className="font-bold text-lg text-gray-800">
               {otherUser?.fullName || otherUser?.username}
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className={`text-sm ${typingUsers.size > 0 ? "text-emerald-500 font-medium" : "text-gray-500"}`}>
               {typingUsers.size > 0
                 ? "Typing..."
                 : isOnline
@@ -690,8 +696,9 @@ export default function ChatWindow({ chat, onBack }) {
           variant="ghost"
           size="icon"
           onClick={() => setShowSearch(!showSearch)}
+          className="hover:bg-gray-100 rounded-full"
         >
-          <Search className="w-5 h-5 text-gray-400" />
+          <Search className="w-5 h-5 text-gray-500" />
         </Button>
       </div>
 
@@ -750,13 +757,13 @@ export default function ChatWindow({ chat, onBack }) {
 
       {/* Messages Area */}
       <div
-        className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+        className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-gray-50"
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
         {/* Sticky Exchange Widget - Only show if this chat is related to a post */}
         {chat?.post && !isExchangeDismissed && (
-          <div className="sticky top-0 z-10 pb-0 bg-white">
+          <div className="sticky top-0 z-10 pb-0 bg-white shadow-sm">
             <ExchangeWidget
               post={chat.post}
               exchange={exchange}
@@ -766,25 +773,25 @@ export default function ChatWindow({ chat, onBack }) {
           </div>
         )}
 
-        <div className="p-4">
+        <div className="p-5">
           {loading && (
-            <div className="py-4 text-xs text-center text-gray-400">
+            <div className="py-4 text-sm text-center text-gray-400">
               Loading history...
             </div>
           )}
 
           {/* Messages List */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {messages.map((msg, i) => renderMessage(msg, i))}
           </div>
 
           {/* Typing Indicator */}
           {typingUsers.size > 0 && (
-            <div className="flex items-center gap-2 mt-2 ml-10 text-xs italic text-gray-400">
+            <div className="flex items-center gap-2 mt-3 ml-10 text-sm italic text-gray-500">
               <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></span>
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce delay-75"></span>
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce delay-150"></span>
               </div>
               Typing...
             </div>
@@ -794,7 +801,7 @@ export default function ChatWindow({ chat, onBack }) {
       </div>
 
       {/* Input Area */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 border-t border-gray-100">
         <MessageInput chatId={chat._id} onMessageSent={scrollToBottom} />
       </div>
 

@@ -87,36 +87,34 @@ export default function Chat() {
   return (
     // Hide global right sidebar to give Chat full space
     <MainLayout rightSidebar={null}>
-      <div className="absolute inset-0 flex flex-col px-0 pt-6 pb-6 md:px-6">
-        {/* Main Chat Container */}
-        <div className="flex-1 min-h-0 flex flex-col bg-white md:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-          <div className="grid h-full grid-cols-1 lg:grid-cols-3">
-            {/* --- Left: Chat List --- */}
-            <div
-              className={`lg:col-span-1 border-r border-gray-100 h-full flex flex-col overflow-hidden ${
-                showChatWindow ? "hidden lg:flex" : "flex"
-              }`}
-            >
-              <ChatList
-                onSelectChat={handleSelectChat}
-                selectedChatId={selectedChat?._id}
-              />
-            </div>
+      <div className="absolute inset-0 flex flex-col px-2 pt-4 pb-4 md:px-6 md:pt-6 md:pb-6 bg-gray-100">
+        {/* Main Chat Container - Grid with gap between panels */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* --- Left: Chat List Panel --- */}
+          <div
+            className={`lg:col-span-4 xl:col-span-3 h-full flex flex-col overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-200 ${
+              showChatWindow ? "hidden lg:flex" : "flex"
+            }`}
+          >
+            <ChatList
+              onSelectChat={handleSelectChat}
+              selectedChatId={selectedChat?._id}
+            />
+          </div>
 
-            {/* --- Right: Chat Window --- */}
-            <div
-              className={`lg:col-span-2 h-full bg-white overflow-hidden ${
-                showChatWindow ? "flex flex-col" : "hidden lg:flex flex-col"
-              }`}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center h-full bg-gray-50/50">
-                  <div className="w-8 h-8 border-b-2 rounded-full animate-spin border-emerald-500"></div>
-                </div>
-              ) : (
-                <ChatWindow chat={selectedChat} onBack={handleBack} />
-              )}
-            </div>
+          {/* --- Right: Chat Window Panel --- */}
+          <div
+            className={`lg:col-span-8 xl:col-span-9 h-full overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-200 ${
+              showChatWindow ? "flex flex-col" : "hidden lg:flex flex-col"
+            }`}
+          >
+            {loading ? (
+              <div className="flex items-center justify-center h-full bg-gray-50/50">
+                <div className="w-8 h-8 border-b-2 rounded-full animate-spin border-emerald-500"></div>
+              </div>
+            ) : (
+              <ChatWindow chat={selectedChat} onBack={handleBack} />
+            )}
           </div>
         </div>
       </div>
