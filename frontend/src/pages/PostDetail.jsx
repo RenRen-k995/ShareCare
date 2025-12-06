@@ -239,18 +239,21 @@ export default function PostDetail() {
   const userReacted = user && post.reactions?.some((r) => r.user === user.id);
 
   return (
-    <MainLayout rightSidebar={<CreatorProfile author={post.author} />}>
+    <MainLayout
+      rightSidebar={<CreatorProfile author={post.author} />}
+      contentMaxWidth="max-w-[54rem]"
+    >
       <div className="pb-32">
         {/* ... Header & Card ... */}
-        <div className="sticky top-0 z-20 pt-6 pb-4 bg-[#F5F7F7]">
-          <h2 className="ml-8 text-sm font-bold tracking-wide text-gray-500 uppercase">
+        <div className="sticky top-0 z-20 pt-8 pb-4 bg-[#F5F7F7]">
+          <h2 className="text-base font-bold tracking-wide text-gray-500 uppercase">
             Article Details
           </h2>
         </div>
 
-        <div className="bg-white rounded-[2rem] p-8 mb-6 shadow-sm border border-gray-100">
+        <div className=" rounded-[2rem] py-2 mb-6">
           <div className="flex flex-row justify-between">
-            <h1 className="mb-4 text-4xl font-extrabold leading-tight tracking-tight text-gray-900">
+            <h1 className="mb-4 text-3xl font-extrabold leading-tight tracking-tight text-gray-900">
               {post.title}
             </h1>
             <div className="flex items-center justify-between">
@@ -270,7 +273,7 @@ export default function PostDetail() {
             </div>
           </div>
 
-          <div className="flex items-center mb-8 text-xs font-medium tracking-wide text-gray-400">
+          <div className="flex items-center mb-6 text-xs font-medium tracking-wide text-gray-400">
             <span>{formatDate(post.createdAt)}</span>
             <span className="mx-2">·</span>
             <span className="text-gray-500 uppercase">{post.category}</span>
@@ -294,7 +297,7 @@ export default function PostDetail() {
           </div>
 
           {post.image && (
-            <div className="w-full aspect-[2.1] rounded-2xl overflow-hidden bg-gray-100 mb-10 shadow-md border border-gray-100">
+            <div className="w-full aspect-[1.9] rounded-2xl overflow-hidden bg-gray-100 mb-7">
               <img
                 src={getImageUrl(post.image)}
                 alt={post.title}
@@ -304,18 +307,18 @@ export default function PostDetail() {
           )}
 
           <div
-            className="mb-12 leading-relaxed prose prose-lg text-gray-800 max-w-none [&_img]:max-w-[600px] [&_img]:w-[60%] [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-6 [&_img]:mx-auto [&_img]:block [&_img]:shadow-md [&_img]:border [&_img]:border-gray-100"
+            className="mb-12 leading-relaxed prose prose-lg text-gray-800 text-lg max-w-none [&_img]:max-w-[600px] [&_img]:w-[60%] [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-6 [&_img]:mx-auto [&_img]:block [&_img]:shadow-md [&_img]:border [&_img]:border-gray-100"
             dangerouslySetInnerHTML={{ __html: post.description }}
           />
 
           {/* Main Post Reaction Buttons */}
-          <div className="flex justify-center gap-4 pt-10 mt-2 border-t border-gray-100">
+          <div className="flex justify-center gap-4 pt-3 mt-2">
             <button
               onClick={handleReaction}
-              className={`flex items-center justify-center gap-3 px-12 py-3 rounded-3xl transition-all duration-200 font-medium shadow-sm w-56 ${
+              className={`flex items-center justify-center gap-3 px-12 py-3 rounded-3xl transition-all duration-200 font-medium w-56 ${
                 userReacted
-                  ? "bg-emerald-50 text-emerald-600 border border-emerald-500 hover:shadow-md"
-                  : "bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 hover:text-gray-800"
+                  ? "bg-emerald-50 text-emerald-600 hover:shadow-md"
+                  : "bg-[#e8e9e9] text-gray-500 hover:bg-[#d9dbdb] hover:text-gray-800"
               }`}
             >
               <ThumbsUp
@@ -326,7 +329,7 @@ export default function PostDetail() {
               </span>
             </button>
 
-            <button className="flex items-center justify-center w-56 gap-3 px-12 font-medium text-gray-500 transition-all border border-gray-200 shadow-sm bg-gray-50 rounded-3xl hover:bg-gray-100 hover:border-gray-300 hover:shadow-md hover:text-gray-800">
+            <button className="flex items-center justify-center w-56 gap-3 px-12 font-medium text-gray-500 bg-[#e8e9e9] transition-all rounded-3xl hover:bg-[#d9dbdb] hover:text-gray-800">
               <Bookmark className="w-5 h-5" />
               <span className="text-lg font-bold">Save</span>
             </button>
@@ -380,9 +383,9 @@ export default function PostDetail() {
 
         {/* 2. Comments List Header */}
         <div className="flex items-center justify-between px-4 mb-4">
-          <h3 className="text-lg font-bold text-gray-900">
+          <h3 className="text-xl font-bold text-gray-900">
             All Comments{" "}
-            <span className="ml-1 text-sm font-normal text-gray-400">
+            <span className="ml-1 text-lg font-medium text-gray-400">
               {comments.length}
             </span>
           </h3>
@@ -390,10 +393,10 @@ export default function PostDetail() {
             onClick={() =>
               setSortMethod((prev) => (prev === "newest" ? "top" : "newest"))
             }
-            className="flex items-center text-xs font-medium text-gray-500 hover:text-gray-900"
+            className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-900"
           >
             {sortMethod === "newest" ? "Newest" : "Top"}{" "}
-            <ChevronDown className="w-3 h-3 ml-1" />
+            <ChevronDown className="w-4 h-4 ml-1" />
           </button>
         </div>
 
@@ -432,11 +435,12 @@ export default function PostDetail() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-gray-900">
+                        <div className="flex items-center gap-1">
+                          <span className="text-base font-medium text-gray-500">
                             {comment.author?.username}
                           </span>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-gray-500">•</span>
+                          <span className="text-sm font-semibold text-gray-500">
                             {formatTimeAgo(comment.createdAt)}
                           </span>
                         </div>
@@ -455,17 +459,17 @@ export default function PostDetail() {
                               }}
                               className="p-1 text-gray-400 transition-colors rounded-full hover:bg-gray-100 hover:text-gray-600"
                             >
-                              <MoreHorizontal className="w-4 h-4" />
+                              <MoreHorizontal className="w-5 h-5" />
                             </button>
                             {activeCommentMenu === comment._id && (
-                              <div className="absolute right-0 z-10 py-1 mt-1 bg-white border border-gray-100 shadow-xl w-28 rounded-xl animate-in fade-in zoom-in-95">
+                              <div className="absolute right-0 z-10 mt-1 bg-white border border-gray-200 shadow-lg w-28 rounded-xl animate-in fade-in zoom-in-95 hover:bg-red-50">
                                 <button
                                   onClick={() =>
                                     handleDeleteComment(comment._id)
                                   }
-                                  className="flex items-center w-full gap-2 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+                                  className="flex items-center w-full gap-2 px-3 py-2 text-sm font-medium text-red-600 transition-colors"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                  <Trash2 className="w-4 h-4" /> Delete
                                 </button>
                               </div>
                             )}
@@ -473,30 +477,32 @@ export default function PostDetail() {
                         )}
                       </div>
 
-                      <p className="text-gray-700 text-[15px] leading-relaxed mb-3 whitespace-pre-wrap">
+                      <p className="mb-1 text-lg font-medium leading-relaxed text-gray-700 whitespace-pre-wrap">
                         {comment.content}
                       </p>
 
                       {/* Comment Actions - Updated Wrapper Color */}
-                      <div className="flex gap-3">
+                      <div className="flex gap-7">
                         <button
                           onClick={() => handleCommentLike(comment._id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                          className={`inline-flex items-center gap-1 px-1.5 py-1.5 justify-start rounded-xl text-base font-semibold transition-all ${
                             isLiked
-                              ? "text-cyan-500 hover:bg-[#F5F7F7]"
-                              : "text-gray-500 hover:bg-[#F5F7F7] hover:text-gray-700"
+                              ? "text-emerald-400 hover:bg-gray-100"
+                              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
                           }`}
                         >
                           <ThumbsUp
-                            className={`w-3.5 h-3.5 ${
+                            className={`size-5 shrink-0 ${
                               isLiked ? "fill-current" : ""
                             }`}
                           />
-                          <span>{likeCount > 0 ? likeCount : "Like"}</span>
+                          <span className="tabular-nums">
+                            {likeCount > 0 ? likeCount : "Like"}
+                          </span>
                         </button>
 
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 hover:bg-[#F5F7F7] hover:text-gray-700 transition-all">
-                          <MessageSquare className="w-3.5 h-3.5" />
+                        <button className="inline-flex items-center gap-1.5 px-1.5 py-1.5 rounded-xl text-base font-semibold text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all">
+                          <MessageSquare className="size-5 shrink-0" />
                           <span>Reply</span>
                         </button>
                       </div>

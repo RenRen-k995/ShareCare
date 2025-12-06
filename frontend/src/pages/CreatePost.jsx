@@ -14,6 +14,7 @@ import CropModal from "../components/CropModal";
 import RichTextEditor from "../components/RichTextEditor";
 import { ErrorMessage, Avatar } from "../components/common";
 import { CATEGORY_OPTIONS } from "../constants";
+import { ProfileDropdown } from "../components/layout";
 
 export default function CreatePost() {
   const [formData, setFormData] = useState({
@@ -114,35 +115,30 @@ export default function CreatePost() {
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F7F7]">
       {/* --- Sticky Header --- */}
-      <header className="sticky top-0 z-50 h-16 bg-white">
+      <header className="sticky top-0 z-50 h-20 bg-white border-b border-gray-100">
         <div className="flex items-center justify-between h-full max-w-6xl px-6 mx-auto">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-gray-900">Creation Center</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Creation Center
+            </h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <Avatar
-                src={user?.avatar}
-                alt={user?.username}
-                fallback={user?.username}
-                size="sm"
-              />
-            </div>
+            <ProfileDropdown />
           </div>
         </div>
       </header>
 
       {/* --- Main Content --- */}
-      <main className="flex-1 w-full max-w-4xl p-6 pb-32 mx-auto">
+      <main className="flex-1 w-full max-w-5xl p-6 pb-32 mx-auto">
         <ErrorMessage message={error} className="mb-4 rounded-lg" />
 
         {/* Main White Card Container */}
         {/* IMPORTANT: No overflow-hidden here, or sticky breaks */}
-        <div className="bg-white rounded-2xl p-8 min-h-[80vh]">
+        <div className="bg-white rounded-2xl p-8 min-h-[80vh] shadow-md border border-gray-100">
           {/* Header Row: Title + Drafts */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">New Article</h2>
+            <h2 className="text-2xl font-bold text-gray-900">New Article</h2>
           </div>
 
           {/* 1. Title Input - Standalone */}
@@ -174,7 +170,7 @@ export default function CreatePost() {
           <div className="max-w-2xl space-y-8">
             {/* Channel */}
             <div>
-              <label className="block mb-2 text-base font-bold text-gray-900">
+              <label className="block mb-2 text-lg font-bold text-gray-900">
                 Select Channel <span className="text-red-500">*</span>
               </label>
               <Select
@@ -198,18 +194,18 @@ export default function CreatePost() {
 
             {/* Cover Image */}
             <div>
-              <label className="flex flex-col block mb-2 text-base font-bold text-gray-900">
+              <label className="flex flex-col block mb-2 text-lg font-bold text-gray-900">
                 <div>
                   Add Cover <span className="text-red-500">*</span>
                 </div>
-                <span className="ml-2 text-xs font-normal text-gray-400">
+                <span className="ml-2 text-base font-normal text-gray-400">
                   Add a cover image that fits your content to attract more
                   views.
                 </span>
               </label>
 
               {formData.coverImageUrl ? (
-                <div className="relative w-[300px] overflow-hidden rounded-lg group aspect-video bg-gray-50 border border-gray-100">
+                <div className="relative w-[380px] overflow-hidden rounded-lg group aspect-video bg-gray-50 border border-gray-100">
                   <img
                     src={formData.coverImageUrl}
                     alt="Cover"
@@ -244,14 +240,14 @@ export default function CreatePost() {
           <div className="flex items-center justify-end gap-4 pt-6 mt-12 border-t border-gray-100">
             <Button
               variant="secondary"
-              className="px-8 text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200"
+              className="px-8 text-lg text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200"
             >
               Preview
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={loading || !formData.title}
-              className="px-8 text-white rounded-full shadow-md bg-cyan-400 hover:bg-cyan-500"
+              className="px-8 text-lg text-white rounded-full shadow-md bg-cyan-400 hover:bg-cyan-500"
             >
               {loading ? "Publishing..." : "Publish"}
             </Button>

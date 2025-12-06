@@ -56,7 +56,7 @@ export default function ProfileDropdown() {
       {/* Trigger: Avatar */}
       <button
         onClick={toggleDropdown}
-        className="flex items-center justify-center w-10 h-10 overflow-hidden transition-all border-2 border-transparent rounded-full hover:border-cyan-200 focus:outline-none"
+        className="flex items-center justify-center overflow-hidden transition-all border-2 border-transparent rounded-full size-12 hover:border-cyan-200 focus:outline-none"
       >
         {user.avatar ? (
           <img
@@ -75,7 +75,7 @@ export default function ProfileDropdown() {
       {isOpen && (
         <div
           className={`
-            absolute right-0 z-50 w-64 mt-3 origin-top-right bg-white shadow-xl rounded-3xl ring-1 ring-black ring-opacity-5
+            absolute right-0 z-50 w-80 mt-3 origin-top-right bg-white shadow-xl rounded-3xl ring-1 ring-black ring-opacity-5
             transition-all duration-200 ease-out
             ${
               isVisible
@@ -101,14 +101,14 @@ export default function ProfileDropdown() {
                 )}
               </div>
               <div className="overflow-hidden">
-                <h3 className="text-sm font-medium text-gray-900 truncate">
+                <h3 className="text-lg font-medium text-gray-900 truncate">
                   {user.username || "Unknown User"}
                 </h3>
                 <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
                   <span className="text-[10px] font-medium uppercase bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
                     ID
                   </span>
-                  <span className="truncate font-mono text-[11px]">
+                  <span className="font-mono text-sm truncate">
                     {user.id || "Unknown"}
                   </span>
                 </div>
@@ -118,18 +118,18 @@ export default function ProfileDropdown() {
             {/* Stats Row */}
             <div className="flex justify-between gap-6 px-2 text-center">
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-base font-medium text-gray-900">
                   {user.totalLikes || 0}
                 </div>
-                <div className="text-xs text-gray-400">Likes</div>
+                <div className="text-sm text-gray-400">Likes</div>
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900">0</div>
-                <div className="text-xs text-gray-400">Following</div>
+                <div className="text-base font-medium text-gray-900">0</div>
+                <div className="text-sm text-gray-400">Following</div>
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900">0</div>
-                <div className="text-xs text-gray-400">Followers</div>
+                <div className="text-base font-medium text-gray-900">0</div>
+                <div className="text-sm text-gray-400">Followers</div>
               </div>
             </div>
           </div>
@@ -140,28 +140,28 @@ export default function ProfileDropdown() {
           <div className="p-2 py-3 space-y-1">
             <Link
               to="/profile"
-              className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-colors group"
+              className="flex items-center px-4 py-2.5 text-base font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-colors group"
               onClick={toggleDropdown}
             >
-              <User className="w-4 h-4 mr-3 text-gray-400 group-hover:text-gray-600" />
+              <User className="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-600" />
               My Profile
             </Link>
 
             <Link
               to="/posts/new"
-              className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-colors group"
+              className="flex items-center px-4 py-2.5 text-base font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-colors group"
               onClick={toggleDropdown}
             >
-              <PenSquare className="w-4 h-4 mr-3 text-gray-400 group-hover:text-gray-600" />
+              <PenSquare className="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-600" />
               Creation Center
             </Link>
 
             <Link
               to="/settings"
-              className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-colors group"
+              className="flex items-center px-4 py-2.5 text-base font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-colors group"
               onClick={toggleDropdown}
             >
-              <Settings className="w-4 h-4 mr-3 text-gray-400 group-hover:text-gray-600" />
+              <Settings className="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-600" />
               Settings
             </Link>
           </div>
@@ -172,9 +172,9 @@ export default function ProfileDropdown() {
           <div className="p-2 py-3">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-colors group"
+              className="flex items-center w-full px-4 py-2.5 text-base font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-colors group"
             >
-              <LogOut className="w-4 h-4 mr-3 text-gray-400 group-hover:text-gray-600" />
+              <LogOut className="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-600" />
               Log Out
             </button>
           </div>

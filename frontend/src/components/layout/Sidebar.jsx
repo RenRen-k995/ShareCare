@@ -13,7 +13,7 @@ import {
 export default function Sidebar() {
   const location = useLocation();
 
-  const navigation = [
+  const categories = [
     { name: "Home", href: "/", icon: Home, label: "All Posts" },
     {
       name: "Items",
@@ -33,80 +33,100 @@ export default function Sidebar() {
       icon: Heart,
       label: "Emotional Support",
     },
-    {
-      name: "Messages",
-      href: "/chat",
-      icon: MessageSquare,
-      label: "Real-time Chat",
-    },
   ];
 
   const isActive = (href) => {
-    if (href === "/") {
-      return location.pathname === "/" && !location.search;
-    }
+    if (href === "/") return location.pathname === "/" && !location.search;
+    if (href === "/chat") return location.pathname === "/chat";
     return location.pathname + location.search === href;
   };
 
   return (
-    <aside className="flex flex-col bg-white w-[17rem]">
+    <aside className="flex-col hidden bg-white md:flex w-[19.3rem]">
       {/* Logo */}
       <div className="px-6 py-8">
-        <Link to="/" className="flex items-center space-x-3">
-          <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl">
-            <Heart className="w-6 h-6 text-white" fill="currentColor" />
+        <Link to="/" className="flex items-center gap-3">
+          <div className="flex items-center justify-center size-10 bg-emerald-600 rounded-xl">
+            <Heart className="text-white size-6" fill="currentColor" />
           </div>
           <span className="text-2xl font-bold text-gray-900">ShareCare</span>
         </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-1">
-        {navigation.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.href);
-
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={`
-                flex items-center px-4 py-3 rounded-xl transition-all duration-200
-                ${
+      {/* Categories Section */}
+      <nav className="flex-1 px-4">
+        <p className="px-4 mb-2 text-base font-semibold tracking-wider text-gray-400 uppercase">
+          Categories
+        </p>
+        <div className="space-y-1">
+          {categories.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`flex items-center px-4 py-3 rounded-xl transition-colors ${
                   active
-                    ? "bg-slate-50 text-gray-900 font-medium shadow-sm"
-                    : "text-gray-600 hover:bg-slate-50 hover:text-gray-900"
-                }
-              `}
-            >
-              <Icon
-                className={`w-5 h-5 mr-3 ${active ? "text-emerald-500" : ""}`}
-              />
-              <div className="flex flex-col">
-                <span className="text-sm">{item.name}</span>
-                {item.label && (
-                  <span className="text-xs text-gray-400">{item.label}</span>
-                )}
-              </div>
-            </Link>
-          );
-        })}
+                    ? "bg-emerald-50 text-emerald-600 font-medium"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Icon
+                  className={`size-5 mr-3 ${active ? "text-emerald-600" : ""}`}
+                />
+                <div className="flex flex-col">
+                  <span className="text-base">{item.name}</span>
+                  {item.label && (
+                    <span className="text-sm text-gray-400">{item.label}</span>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Divider */}
+        <div className="h-px mx-4 my-4 bg-gray-100" />
+
+        {/* Messages Section - Separate from categories */}
+        <p className="px-4 mb-2 text-base font-semibold tracking-wider text-gray-400 uppercase">
+          Communication
+        </p>
+        <Link
+          to="/chat"
+          className={`flex items-center px-4 py-3 rounded-xl transition-colors ${
+            isActive("/chat")
+              ? "bg-emerald-50 text-emerald-600 font-medium"
+              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+          }`}
+        >
+          <MessageSquare
+            className={`size-5 mr-3 ${
+              isActive("/chat") ? "text-emerald-600" : ""
+            }`}
+          />
+          <div className="flex flex-col">
+            <span className="text-base">Messages</span>
+            <span className="text-sm text-gray-400">Real-time Chat</span>
+          </div>
+        </Link>
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-6 space-y-2 border-t border-gray-100">
+      <div className="px-4 py-6 space-y-2">
         <Link
           to="/report"
-          className="flex items-center px-4 py-2 text-sm text-gray-600 transition-colors rounded-lg hover:text-gray-900 hover:bg-slate-50"
+          className="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:text-gray-900 hover:bg-gray-50"
         >
-          <AlertCircle className="w-4 h-4 mr-2" />
+          <AlertCircle className="mr-2 size-4" />
           Report Issue
         </Link>
         <Link
           to="/terms"
-          className="flex items-center px-4 py-2 text-sm text-gray-600 transition-colors rounded-lg hover:text-gray-900 hover:bg-slate-50"
+          className="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:text-gray-900 hover:bg-gray-50"
         >
-          <FileText className="w-4 h-4 mr-2" />
+          <FileText className="mr-2 size-4" />
           Terms
         </Link>
         <div className="px-4 py-2 text-xs text-gray-400">© 2025 ShareCare</div>

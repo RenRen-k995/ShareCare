@@ -11,7 +11,7 @@ export default function ErrorMessage({ message, className }) {
   return (
     <div
       className={cn(
-        "bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-100",
+        "bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-200 shadow-sm",
         className
       )}
     >

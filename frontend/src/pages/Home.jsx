@@ -5,7 +5,11 @@ import postService from "../services/postService";
 import PostCard from "../components/PostCard";
 import MainLayout from "../components/layout/MainLayout";
 import CreatePostWidget from "../components/CreatePostWidget";
-import { ErrorMessage, EmptyState, PageLoadingState } from "../components/common";
+import {
+  ErrorMessage,
+  EmptyState,
+  PageLoadingState,
+} from "../components/common";
 import { Button } from "../components/ui/button";
 
 export default function Home() {
@@ -66,7 +70,7 @@ export default function Home() {
             action={
               user && (
                 <Link to="/posts/new">
-                  <Button className="px-6 py-3 font-semibold text-white transition-all rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 hover:shadow-lg">
+                  <Button className="px-6 py-3 font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-full">
                     Create the first post
                   </Button>
                 </Link>
@@ -74,7 +78,7 @@ export default function Home() {
             }
           />
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-4">
             {posts.map((post) => (
               <PostCard
                 key={post._id}
