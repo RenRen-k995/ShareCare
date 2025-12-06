@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useSocket } from "../../contexts/SocketContext";
 import {
-  Plus,
   Send,
   Smile,
   X,
@@ -195,46 +194,46 @@ export default function MessageInput({ chatId, onMessageSent }) {
   };
 
   return (
-    <div className="flex flex-col p-3 bg-white border-t">
+    <div className="flex flex-col p-4 bg-white">
       {/* File Preview Area */}
       {selectedFile && (
-        <div className="flex items-center gap-3 p-2 mb-2 border bg-slate-50 rounded-xl border-slate-100">
+        <div className="flex items-center gap-3 p-3 mb-3 border bg-gray-50 rounded-xl border-gray-200">
           {filePreview ? (
             <img
               src={filePreview}
               alt="Preview"
-              className="object-cover w-12 h-12 border rounded-lg"
+              className="object-cover w-14 h-14 border rounded-lg"
             />
           ) : (
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-slate-200">
-              <Paperclip className="w-5 h-5 text-slate-500" />
+            <div className="flex items-center justify-center w-14 h-14 rounded-lg bg-gray-200">
+              <Paperclip className="w-6 h-6 text-gray-500" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate text-slate-700">
+            <p className="text-sm font-medium truncate text-gray-700">
               {selectedFile.name}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-gray-400">
               {(selectedFile.size / 1024).toFixed(1)} KB
             </p>
           </div>
           <button
             onClick={removeFile}
-            className="p-1 rounded-full hover:bg-slate-200"
+            className="p-1.5 rounded-full hover:bg-gray-200 transition-colors"
           >
-            <X className="w-4 h-4 text-slate-500" />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
       )}
 
       {/* Emoji Bar */}
       {showEmojiPicker && (
-        <div className="flex gap-2 p-2 mb-2 overflow-x-auto bg-slate-50 rounded-xl no-scrollbar">
+        <div className="flex gap-2 p-3 mb-3 overflow-x-auto bg-gray-50 rounded-xl no-scrollbar border border-gray-100">
           {EMOJI_LIST.map((emoji) => (
             <button
               key={emoji}
               onClick={() => setMessage((prev) => prev + emoji)}
-              className="px-1 text-xl transition-transform hover:scale-125"
+              className="px-1 text-2xl transition-transform hover:scale-125"
             >
               {emoji}
             </button>
@@ -258,27 +257,27 @@ export default function MessageInput({ chatId, onMessageSent }) {
         accept=".pdf,.doc,.docx,.txt"
       />
 
-      {/* Main Input Row - Messenger Style */}
-      <div className="flex items-end gap-2">
-        {/* Plus Button with Popup Menu */}
+      {/* Main Input Row */}
+      <div className="flex items-end gap-3">
+        {/* Attachment Button with Popup Menu */}
         <div className="relative">
           <Button
             variant="ghost"
             size="icon"
-            className={`rounded-full flex-shrink-0 ${
+            className={`rounded-full flex-shrink-0 h-10 w-10 ${
               showAttachMenu
                 ? "text-emerald-500 bg-emerald-50"
-                : "text-slate-400 hover:text-emerald-500 hover:bg-emerald-50"
+                : "text-gray-500 hover:text-emerald-500 hover:bg-emerald-50"
             }`}
             onClick={() => setShowAttachMenu(!showAttachMenu)}
             disabled={uploading}
           >
-            <Plus className="w-5 h-5" />
+            <Paperclip className="w-5 h-5" />
           </Button>
 
           {/* Attachment Menu Popup */}
           {showAttachMenu && (
-            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-100 p-2 min-w-[160px] z-50">
+            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-xl shadow-lg border border-gray-100 p-2 min-w-[180px] z-50">
               <button
                 type="button"
                 onClick={() => {
@@ -286,12 +285,12 @@ export default function MessageInput({ chatId, onMessageSent }) {
                   imageInputRef.current?.click();
                   setShowAttachMenu(false);
                 }}
-                className="flex items-center w-full gap-3 px-3 py-2 text-sm text-left transition-colors rounded-lg hover:bg-slate-50"
+                className="flex items-center w-full gap-3 px-3 py-2.5 text-sm text-left transition-colors rounded-lg hover:bg-gray-50"
               >
-                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
-                  <ImageIcon className="w-4 h-4 text-blue-600" />
+                <div className="flex items-center justify-center w-9 h-9 bg-blue-100 rounded-full">
+                  <ImageIcon className="w-5 h-5 text-blue-600" />
                 </div>
-                <span className="font-medium text-slate-700">Image</span>
+                <span className="font-medium text-gray-700">Image</span>
               </button>
               <button
                 type="button"
@@ -300,42 +299,42 @@ export default function MessageInput({ chatId, onMessageSent }) {
                   fileInputRef.current?.click();
                   setShowAttachMenu(false);
                 }}
-                className="flex items-center w-full gap-3 px-3 py-2 text-sm text-left transition-colors rounded-lg hover:bg-slate-50"
+                className="flex items-center w-full gap-3 px-3 py-2.5 text-sm text-left transition-colors rounded-lg hover:bg-gray-50"
               >
-                <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-full">
-                  <Paperclip className="w-4 h-4 text-purple-600" />
+                <div className="flex items-center justify-center w-9 h-9 bg-purple-100 rounded-full">
+                  <Paperclip className="w-5 h-5 text-purple-600" />
                 </div>
-                <span className="font-medium text-slate-700">File</span>
+                <span className="font-medium text-gray-700">File</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Text Input with Inside Buttons */}
-        <div className="flex-1 relative flex items-end bg-slate-50 rounded-[1.2rem] px-3 py-2 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-100 transition-all">
+        {/* Text Input with Emoji Button */}
+        <div className="flex-1 relative flex items-end bg-gray-100 rounded-2xl px-4 py-2.5 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-200 focus-within:border-emerald-300 transition-all border border-transparent">
           <textarea
             ref={textareaRef}
             value={message}
             onChange={handleTyping}
             onKeyDown={handleKeyPress}
-            placeholder="Aa"
-            className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-gray-700 placeholder:text-gray-400 max-h-[120px] py-1 pr-2"
+            placeholder="Type a message..."
+            className="flex-1 bg-transparent border-none outline-none resize-none text-base text-gray-700 placeholder:text-gray-400 max-h-[120px] py-0.5 pr-2"
             rows={1}
             disabled={uploading}
-            style={{ minHeight: "24px" }}
+            style={{ minHeight: "28px" }}
           />
           <Button
             variant="ghost"
             size="icon"
-            className={`flex-shrink-0 h-6 w-6 rounded-full ${
+            className={`flex-shrink-0 h-7 w-7 rounded-full ${
               showEmojiPicker
                 ? "text-yellow-500 bg-yellow-50"
-                : "text-slate-400 hover:text-yellow-500 hover:bg-transparent"
+                : "text-gray-400 hover:text-yellow-500 hover:bg-transparent"
             }`}
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             disabled={uploading}
           >
-            <Smile className="w-4 h-4" />
+            <Smile className="w-5 h-5" />
           </Button>
         </div>
 
@@ -343,20 +342,20 @@ export default function MessageInput({ chatId, onMessageSent }) {
         <Button
           onClick={handleSend}
           disabled={(!message.trim() && !selectedFile) || uploading}
-          className="flex-shrink-0 w-10 h-10 text-white rounded-full shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 disabled:opacity-50"
+          className="flex-shrink-0 w-11 h-11 text-white rounded-full shadow-md bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:bg-gray-300"
           title={uploadStatus || "Send message"}
         >
           {uploading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Send className="w-10 h-10" />
+            <Send className="w-5 h-5" />
           )}
         </Button>
       </div>
 
       {/* Upload Status Indicator */}
       {uploading && uploadStatus && (
-        <div className="mt-2 text-xs text-center text-slate-500 animate-pulse">
+        <div className="mt-2 text-sm text-center text-gray-500 animate-pulse">
           {uploadStatus}
         </div>
       )}
