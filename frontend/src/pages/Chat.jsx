@@ -87,12 +87,12 @@ export default function Chat() {
   return (
     // Hide global right sidebar to give Chat full space
     <MainLayout rightSidebar={null}>
-      <div className="absolute inset-0 flex flex-col px-2 pt-4 pb-4 md:px-6 md:pt-6 md:pb-6 bg-gray-100">
+      <div className="absolute inset-0 flex flex-col px-2 pt-4 pb-4 bg-[#F5F7F7] md:px-6 md:pt-6 md:pb-6">
         {/* Main Chat Container - Grid with gap between panels */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid flex-1 min-h-0 grid-cols-1 gap-4 lg:grid-cols-12">
           {/* --- Left: Chat List Panel --- */}
           <div
-            className={`lg:col-span-4 xl:col-span-3 h-full flex flex-col overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-200 ${
+            className={`lg:col-span-4 xl:col-span-3 h-full flex flex-col overflow-hidden bg-white rounded-2xl ${
               showChatWindow ? "hidden lg:flex" : "flex"
             }`}
           >
@@ -104,7 +104,7 @@ export default function Chat() {
 
           {/* --- Right: Chat Window Panel --- */}
           <div
-            className={`lg:col-span-8 xl:col-span-9 h-full overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-200 ${
+            className={`lg:col-span-8 xl:col-span-9 h-full overflow-hidden bg-white rounded-2xl ${
               showChatWindow ? "flex flex-col" : "hidden lg:flex flex-col"
             }`}
           >

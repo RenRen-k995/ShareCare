@@ -197,20 +197,20 @@ export default function MessageInput({ chatId, onMessageSent }) {
     <div className="flex flex-col p-4 bg-white">
       {/* File Preview Area */}
       {selectedFile && (
-        <div className="flex items-center gap-3 p-3 mb-3 border bg-gray-50 rounded-xl border-gray-200">
+        <div className="flex items-center gap-3 p-3 mb-3 border border-gray-200 bg-gray-50 rounded-xl">
           {filePreview ? (
             <img
               src={filePreview}
               alt="Preview"
-              className="object-cover w-14 h-14 border rounded-lg"
+              className="object-cover border rounded-lg w-14 h-14"
             />
           ) : (
-            <div className="flex items-center justify-center w-14 h-14 rounded-lg bg-gray-200">
+            <div className="flex items-center justify-center bg-gray-200 rounded-lg w-14 h-14">
               <Paperclip className="w-6 h-6 text-gray-500" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate text-gray-700">
+            <p className="text-sm font-medium text-gray-700 truncate">
               {selectedFile.name}
             </p>
             <p className="text-xs text-gray-400">
@@ -228,7 +228,7 @@ export default function MessageInput({ chatId, onMessageSent }) {
 
       {/* Emoji Bar */}
       {showEmojiPicker && (
-        <div className="flex gap-2 p-3 mb-3 overflow-x-auto bg-gray-50 rounded-xl no-scrollbar border border-gray-100">
+        <div className="flex gap-2 p-3 mb-3 overflow-x-auto border border-gray-100 bg-gray-50 rounded-xl no-scrollbar">
           {EMOJI_LIST.map((emoji) => (
             <button
               key={emoji}
@@ -287,7 +287,7 @@ export default function MessageInput({ chatId, onMessageSent }) {
                 }}
                 className="flex items-center w-full gap-3 px-3 py-2.5 text-sm text-left transition-colors rounded-lg hover:bg-gray-50"
               >
-                <div className="flex items-center justify-center w-9 h-9 bg-blue-100 rounded-full">
+                <div className="flex items-center justify-center bg-blue-100 rounded-full w-9 h-9">
                   <ImageIcon className="w-5 h-5 text-blue-600" />
                 </div>
                 <span className="font-medium text-gray-700">Image</span>
@@ -301,7 +301,7 @@ export default function MessageInput({ chatId, onMessageSent }) {
                 }}
                 className="flex items-center w-full gap-3 px-3 py-2.5 text-sm text-left transition-colors rounded-lg hover:bg-gray-50"
               >
-                <div className="flex items-center justify-center w-9 h-9 bg-purple-100 rounded-full">
+                <div className="flex items-center justify-center bg-purple-100 rounded-full w-9 h-9">
                   <Paperclip className="w-5 h-5 text-purple-600" />
                 </div>
                 <span className="font-medium text-gray-700">File</span>
@@ -342,13 +342,13 @@ export default function MessageInput({ chatId, onMessageSent }) {
         <Button
           onClick={handleSend}
           disabled={(!message.trim() && !selectedFile) || uploading}
-          className="flex-shrink-0 w-11 h-11 text-white rounded-full shadow-md bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:bg-gray-300"
+          className="items-center flex-shrink-0 text-white rounded-xl size-12 bg-emerald-500 hover:bg-emerald-600"
           title={uploadStatus || "Send message"}
         >
           {uploading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-7 h-7 animate-spin" />
           ) : (
-            <Send className="w-5 h-5" />
+            <Send className="w-7 h-7" />
           )}
         </Button>
       </div>

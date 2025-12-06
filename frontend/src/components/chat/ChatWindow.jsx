@@ -419,13 +419,33 @@ export default function ChatWindow({ chat, onBack }) {
             {/* Action Buttons - Only show for non-deleted messages */}
             {!message.isDeleted && (
               <div className="flex gap-1">
-                {/* Reaction Button */}
-                <button
-                  onClick={() => setShowEmojiPicker(message._id)}
-                  className="flex-shrink-0 transition-opacity bg-white border border-gray-200 rounded-full opacity-0 group-hover:opacity-100 p-1.5 shadow-sm hover:bg-gray-50"
-                >
-                  <Smile size={14} className="text-gray-600" />
-                </button>
+                {/* Reaction Button with Emoji Picker */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowEmojiPicker(message._id)}
+                    className="flex-shrink-0 transition-opacity bg-white border border-gray-200 rounded-full opacity-0 group-hover:opacity-100 p-1.5 shadow-sm hover:bg-gray-50"
+                  >
+                    <Smile size={18} className="text-gray-600" />
+                  </button>
+
+                  {/* Emoji Picker - Above reaction button */}
+                  {showEmojiPicker === message._id && (
+                    <div
+                      ref={emojiPickerRef}
+                      className="absolute z-50 flex gap-1 p-2 mb-2 -translate-x-1/2 bg-white border border-gray-200 shadow-lg bottom-full left-1/2 rounded-xl"
+                    >
+                      {QUICK_EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => handleReaction(message._id, emoji)}
+                          className="p-2 text-xl transition-transform rounded-lg hover:bg-gray-100 hover:scale-110"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Delete Button - Only for own messages */}
                 {isMine && (
@@ -455,26 +475,6 @@ export default function ChatWindow({ chat, onBack }) {
                     <Trash2 size={14} />
                     <span>Delete</span>
                   </button>
-                </div>
-              )}
-
-              {/* Emoji Picker - Above message */}
-              {showEmojiPicker === message._id && !message.isDeleted && (
-                <div
-                  ref={emojiPickerRef}
-                  className={`absolute ${
-                    isMine ? "left-0" : "right-0"
-                  } bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 flex gap-1 z-50`}
-                >
-                  {QUICK_EMOJIS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleReaction(message._id, emoji)}
-                      className="p-2 text-xl transition-transform rounded-lg hover:bg-gray-100 hover:scale-110"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
                 </div>
               )}
 
@@ -520,8 +520,15 @@ export default function ChatWindow({ chat, onBack }) {
                           : "bg-white border border-gray-100 hover:bg-gray-50 rounded-bl-sm"
                       }`}
                     >
-                      <div className={`p-2 rounded-full ${isMine ? "bg-white/20" : "bg-emerald-100"}`}>
-                        <FileText size={18} className={isMine ? "text-white" : "text-emerald-600"} />
+                      <div
+                        className={`p-2 rounded-full ${
+                          isMine ? "bg-white/20" : "bg-emerald-100"
+                        }`}
+                      >
+                        <FileText
+                          size={18}
+                          className={isMine ? "text-white" : "text-emerald-600"}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">
@@ -631,18 +638,32 @@ export default function ChatWindow({ chat, onBack }) {
   if (!chat)
     return (
       <div className="flex flex-col items-center justify-center h-full bg-gray-50/30">
-        <div className="w-20 h-20 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-          <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        <div className="flex items-center justify-center w-20 h-20 mb-4 bg-gray-100 rounded-full">
+          <svg
+            className="w-10 h-10 text-gray-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
           </svg>
         </div>
-        <p className="text-lg text-gray-400 font-medium">Select a conversation</p>
-        <p className="text-sm text-gray-300 mt-1">Choose a chat from the list to start messaging</p>
+        <p className="text-lg font-medium text-gray-400">
+          Select a conversation
+        </p>
+        <p className="mt-1 text-sm text-gray-300">
+          Choose a chat from the list to start messaging
+        </p>
       </div>
     );
 
   return (
-    <div className="flex flex-col h-full max-h-full bg-gray-50 overflow-hidden">
+    <div className="flex flex-col h-full max-h-full overflow-hidden bg-gray-50">
       {/* Connection Status Banner */}
       {connectionStatus !== "connected" && (
         <div
@@ -661,12 +682,12 @@ export default function ChatWindow({ chat, onBack }) {
       )}
 
       {/* Header */}
-      <div className="z-10 flex items-center justify-between flex-shrink-0 px-5 py-4 bg-white border-b border-gray-100 shadow-sm">
+      <div className="z-10 flex items-center justify-between flex-shrink-0 px-5 py-4 bg-white">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            className="-ml-2 lg:hidden hover:bg-gray-100 rounded-full"
+            className="-ml-2 rounded-full lg:hidden hover:bg-gray-100"
             onClick={onBack}
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -680,10 +701,16 @@ export default function ChatWindow({ chat, onBack }) {
             isOnline={isOnline}
           />
           <div>
-            <h3 className="font-bold text-lg text-gray-800">
+            <h3 className="text-lg font-bold text-gray-800">
               {otherUser?.fullName || otherUser?.username}
             </h3>
-            <p className={`text-sm ${typingUsers.size > 0 ? "text-emerald-500 font-medium" : "text-gray-500"}`}>
+            <p
+              className={`text-sm ${
+                typingUsers.size > 0
+                  ? "text-emerald-500 font-medium"
+                  : "text-gray-500"
+              }`}
+            >
               {typingUsers.size > 0
                 ? "Typing..."
                 : isOnline
@@ -696,7 +723,7 @@ export default function ChatWindow({ chat, onBack }) {
           variant="ghost"
           size="icon"
           onClick={() => setShowSearch(!showSearch)}
-          className="hover:bg-gray-100 rounded-full"
+          className="rounded-full hover:bg-gray-100"
         >
           <Search className="w-5 h-5 text-gray-500" />
         </Button>
@@ -789,9 +816,9 @@ export default function ChatWindow({ chat, onBack }) {
           {typingUsers.size > 0 && (
             <div className="flex items-center gap-2 mt-3 ml-10 text-sm italic text-gray-500">
               <div className="flex gap-1">
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></span>
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce delay-75"></span>
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce delay-150"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce"></span>
+                <span className="w-2 h-2 delay-75 rounded-full bg-emerald-400 animate-bounce"></span>
+                <span className="w-2 h-2 delay-150 rounded-full bg-emerald-400 animate-bounce"></span>
               </div>
               Typing...
             </div>

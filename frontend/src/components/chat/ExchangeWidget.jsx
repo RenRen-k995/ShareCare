@@ -87,7 +87,7 @@ export default function ExchangeWidget({
   if (!exchange) {
     if (isReceiver && post.status === "available") {
       return (
-        <div className="relative mb-3 border border-blue-200 rounded-lg bg-blue-50">
+        <div className="relative mb-3 border-blue-200 rounded-lg bg-blue-50">
           {/* Content with slide animation */}
           <div
             className={`transition-all duration-300 ease-in-out overflow-hidden ${
@@ -142,7 +142,7 @@ export default function ExchangeWidget({
 
   // --- ACTIVE EXCHANGE STATES ---
   return (
-    <div className="relative mb-3 border border-gray-200 shadow-sm rounded-xl bg-gradient-to-br from-white to-gray-50">
+    <div className="relative mt-0 mb-3 border bg-gray-50">
       {/* Content Area with slide animation */}
       <div
         className={`transition-all duration-300 ease-in-out overflow-hidden ${
@@ -183,7 +183,7 @@ export default function ExchangeWidget({
                   <Button
                     onClick={() => handleStatusUpdate("declined")}
                     variant="outline"
-                    className="h-10 px-4 text-sm font-semibold text-red-600 border-red-200 rounded-lg hover:bg-red-50"
+                    className="h-10 px-4 text-sm font-semibold text-red-600 border border-red-400 rounded-lg hover:bg-red-50"
                   >
                     <X className="w-4 h-4" />
                   </Button>
