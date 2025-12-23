@@ -124,11 +124,15 @@ export default function ProfileDropdown() {
                 <div className="text-sm text-gray-400">Likes</div>
               </div>
               <div className="flex-1">
-                <div className="text-base font-medium text-gray-900">0</div>
+                <div className="text-base font-medium text-gray-900">
+                  {user.following?.length || 0}
+                </div>
                 <div className="text-sm text-gray-400">Following</div>
               </div>
               <div className="flex-1">
-                <div className="text-base font-medium text-gray-900">0</div>
+                <div className="text-base font-medium text-gray-900">
+                  {user.followers?.length || 0}
+                </div>
                 <div className="text-sm text-gray-400">Followers</div>
               </div>
             </div>

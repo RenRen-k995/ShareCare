@@ -7,6 +7,8 @@ import exchangeService from "../../services/exchangeService";
 import MessageInput from "./MessageInput";
 import ExchangeWidget from "./ExchangeWidget";
 import ExchangeRequestModal from "./ExchangeRequestModal";
+import LinkPreview, { TextWithLinks } from "./LinkPreview";
+import { extractUrls } from "../../utils/urlUtils";
 import { Avatar } from "../common";
 import { getFileUrl } from "../../constants";
 import { format } from "../../lib/utils";
@@ -20,11 +22,30 @@ import {
   Smile,
   Trash2,
   MoreVertical,
+  ChevronUp,
+  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
+// Helper function to highlight search terms in text
+const highlightSearchTerm = (text, term) => {
+  if (!term || !text) return text;
+  const regex = new RegExp(`(${term})`, "gi");
+  const parts = text.split(regex);
+  return parts.map((part, i) =>
+    regex.test(part) ? (
+      <mark key={i} className="px-0.5 bg-yellow-300 rounded">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+};
 
 export default function ChatWindow({ chat, onBack }) {
   const [searchParams] = useSearchParams();
@@ -36,6 +57,9 @@ export default function ChatWindow({ chat, onBack }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(null);
   const [exchange, setExchange] = useState(null);
   const [isExchangeDismissed, setIsExchangeDismissed] = useState(false);
@@ -335,13 +359,14 @@ export default function ChatWindow({ chat, onBack }) {
   }, [hasMore, loading, page]);
 
   const scrollToMessage = (messageId) => {
+    setHighlightedMessageId(messageId);
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      messageElement.classList.add("highlight-message");
+      // Clear highlight after animation
       setTimeout(() => {
-        messageElement.classList.remove("highlight-message");
-      }, 2000);
+        setHighlightedMessageId(null);
+      }, 3000);
     }
   };
 
@@ -357,13 +382,28 @@ export default function ChatWindow({ chat, onBack }) {
     }
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
-    if (searchQuery.trim() && socket && chat) {
-      socket.emit("chat:search", {
-        query: searchQuery.trim(),
-        chatId: chat._id,
-      });
+    if (!searchQuery.trim() || searchQuery.trim().length < 2 || !chat) return;
+
+    setSearchLoading(true);
+    try {
+      const result = await chatService.searchMessages(
+        chat._id,
+        searchQuery.trim()
+      );
+      setSearchResults(result.messages || []);
+      setCurrentSearchIndex(0);
+
+      // Auto-jump to first result
+      if (result.messages?.length > 0) {
+        scrollToMessage(result.messages[0]._id);
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -371,6 +411,23 @@ export default function ChatWindow({ chat, onBack }) {
     setSearchQuery("");
     setSearchResults([]);
     setShowSearch(false);
+    setCurrentSearchIndex(0);
+    setHighlightedMessageId(null);
+  };
+
+  const navigateSearchResult = (direction) => {
+    if (searchResults.length === 0) return;
+
+    let newIndex;
+    if (direction === "next") {
+      newIndex = (currentSearchIndex + 1) % searchResults.length;
+    } else {
+      newIndex =
+        (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+    }
+
+    setCurrentSearchIndex(newIndex);
+    scrollToMessage(searchResults[newIndex]._id);
   };
 
   const renderMessage = (message, index) => {
@@ -384,7 +441,13 @@ export default function ChatWindow({ chat, onBack }) {
       <div
         key={message._id}
         id={`message-${message._id}`}
-        className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}
+        className={`flex gap-2 transition-all duration-500 ${
+          isMine ? "justify-end" : "justify-start"
+        } ${
+          highlightedMessageId === message._id
+            ? "bg-yellow-100 -mx-2 px-2 py-1 rounded-lg ring-2 ring-yellow-400"
+            : ""
+        }`}
       >
         {showAvatar && (
           <div className="flex-shrink-0">
@@ -544,19 +607,39 @@ export default function ChatWindow({ chat, onBack }) {
                   {/* Text messages with bubble */}
                   {message.messageType !== "image" &&
                     message.messageType !== "file" && (
-                      <div
-                        className={`px-4 py-2.5 rounded-2xl shadow-sm ${
-                          isMine
-                            ? "bg-emerald-500 text-white rounded-br-sm"
-                            : "bg-white text-gray-800 border border-gray-100 rounded-bl-sm"
-                        }`}
-                      >
-                        {/* Text Content */}
-                        {message.content && (
-                          <p className="text-base leading-relaxed break-words whitespace-pre-wrap">
-                            {message.content}
-                          </p>
-                        )}
+                      <div>
+                        <div
+                          className={`px-4 py-2.5 rounded-2xl shadow-sm ${
+                            isMine
+                              ? "bg-emerald-500 text-white rounded-br-sm"
+                              : "bg-white text-gray-800 border border-gray-100 rounded-bl-sm"
+                          }`}
+                        >
+                          {/* Text Content with clickable links */}
+                          {message.content && (
+                            <p className="text-base leading-relaxed break-words whitespace-pre-wrap">
+                              <TextWithLinks
+                                text={message.content}
+                                className={
+                                  isMine
+                                    ? "text-white [&_a]:text-blue-200 [&_a]:hover:text-white"
+                                    : ""
+                                }
+                              />
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Link Preview - Only for received messages to avoid clutter */}
+                        {!isMine &&
+                          message.content &&
+                          extractUrls(message.content).length > 0 && (
+                            <div className="mt-1 max-w-xs">
+                              <LinkPreview
+                                url={extractUrls(message.content)[0]}
+                              />
+                            </div>
+                          )}
                       </div>
                     )}
 
@@ -731,17 +814,30 @@ export default function ChatWindow({ chat, onBack }) {
 
       {/* Search Bar */}
       {showSearch && (
-        <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50">
-          <form onSubmit={handleSearch} className="flex flex-1 gap-2">
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search messages..."
-              className="flex-1"
-            />
-            <Button type="submit" size="sm">
-              Search
+        <div className="px-4 py-3 border-b bg-white shadow-sm">
+          <form onSubmit={handleSearch} className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute w-4 h-4 text-gray-400 -translate-y-1/2 left-3 top-1/2" />
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search messages... (min 2 characters)"
+                className="pl-10 pr-4"
+                autoFocus
+              />
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={searchLoading || searchQuery.trim().length < 2}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {searchLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Search"
+              )}
             </Button>
             <Button
               type="button"
@@ -757,27 +853,64 @@ export default function ChatWindow({ chat, onBack }) {
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="px-4 py-2 border-b bg-yellow-50">
-          <p className="mb-2 text-sm text-gray-600">
-            Found {searchResults.length} message
-            {searchResults.length > 1 ? "s" : ""}
-          </p>
-          <div className="space-y-1 overflow-y-auto max-h-32">
-            {searchResults
-              .slice(0, 10)
-              .reverse()
-              .map((msg) => (
-                <button
-                  key={msg._id}
-                  onClick={() => scrollToMessage(msg._id)}
-                  className="w-full p-2 text-xs text-left bg-white rounded hover:bg-gray-100"
-                >
-                  <span className="font-medium">{msg.sender?.username}: </span>
-                  <span className="text-gray-600">
-                    {msg.content?.substring(0, 50)}...
+        <div className="px-4 py-3 border-b bg-gradient-to-r from-amber-50 to-yellow-50">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-700">
+              Found{" "}
+              <span className="font-bold text-emerald-600">
+                {searchResults.length}
+              </span>{" "}
+              result{searchResults.length > 1 ? "s" : ""} for "{searchQuery}"
+            </p>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500 mr-2">
+                {currentSearchIndex + 1} / {searchResults.length}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                onClick={() => navigateSearchResult("prev")}
+              >
+                <ChevronUp className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                onClick={() => navigateSearchResult("next")}
+              >
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1 overflow-y-auto max-h-40">
+            {searchResults.map((msg, index) => (
+              <button
+                key={msg._id}
+                onClick={() => {
+                  setCurrentSearchIndex(index);
+                  scrollToMessage(msg._id);
+                }}
+                className={`w-full p-2.5 text-sm text-left rounded-lg transition-colors ${
+                  index === currentSearchIndex
+                    ? "bg-emerald-100 border border-emerald-300"
+                    : "bg-white hover:bg-gray-100 border border-gray-200"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-gray-800">
+                    {msg.sender?.username}
                   </span>
-                </button>
-              ))}
+                  <span className="text-xs text-gray-400">
+                    {format(msg.createdAt, "MMM d, p")}
+                  </span>
+                </div>
+                <span className="text-gray-600 line-clamp-1">
+                  {highlightSearchTerm(msg.content, searchQuery)}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       )}

@@ -15,6 +15,7 @@ import PostDetail from "./pages/PostDetail";
 import AdminPanel from "./pages/AdminPanel";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 import Settings from "./pages/Setting";
 
 function ProtectedRoute({ children }) {
@@ -98,6 +99,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/user/:userId"
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
                 </ProtectedRoute>
               }
             />

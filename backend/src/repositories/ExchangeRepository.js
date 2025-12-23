@@ -1,16 +1,26 @@
 import Exchange from "../models/Exchange.js";
 
+/**
+ * Exchange Repository - Simplified for Donation Platform
+ */
 class ExchangeRepository {
+  // ==================== CREATE ====================
+
   async create(data) {
     const exchange = new Exchange(data);
-    return await exchange.save();
+    await exchange.save();
+    return this.findById(exchange._id);
   }
+
+  // ==================== FIND ====================
 
   async findById(id) {
     return Exchange.findById(id)
       .populate("giver", "username fullName avatar")
       .populate("receiver", "username fullName avatar")
-      .populate("post", "title image category")
+      .populate("post", "title image category status author")
+      .populate("completedBy", "username fullName")
+      .populate("cancelledBy", "username fullName")
       .lean();
   }
 
@@ -18,108 +28,92 @@ class ExchangeRepository {
     return Exchange.findOne({ chat: chatId })
       .populate("giver", "username fullName avatar")
       .populate("receiver", "username fullName avatar")
-      .populate("post", "title image category")
-      .sort({ createdAt: -1 }) // Get the most recent one if multiple exist (rare)
+      .populate("post", "title image category status author")
+      .sort({ createdAt: -1 })
       .lean();
   }
 
+  /**
+   * Find active (non-terminal) exchange by chat
+   */
+  async findActiveByChat(chatId) {
+    return Exchange.findOne({
+      chat: chatId,
+      status: { $in: ["requested", "accepted"] },
+    })
+      .populate("giver", "username fullName avatar")
+      .populate("receiver", "username fullName avatar")
+      .populate("post", "title image category status author")
+      .lean();
+  }
+
+  /**
+   * Find exchanges by user (as giver or receiver)
+   */
   async findByUser(userId, status = null) {
     const query = {
       $or: [{ giver: userId }, { receiver: userId }],
     };
 
     if (status) {
-      query.status = status;
+      if (Array.isArray(status)) {
+        query.status = { $in: status };
+      } else {
+        query.status = status;
+      }
     }
 
     return Exchange.find(query)
       .populate("giver", "username fullName avatar")
       .populate("receiver", "username fullName avatar")
-      .populate("post", "title image category")
+      .populate("post", "title image category status")
+      .sort({ updatedAt: -1 })
+      .lean();
+  }
+
+  /**
+   * Find exchanges by post
+   */
+  async findByPost(postId) {
+    return Exchange.find({ post: postId })
+      .populate("giver", "username fullName avatar")
+      .populate("receiver", "username fullName avatar")
       .sort({ createdAt: -1 })
       .lean();
   }
 
-  async updateStatus(id, status, updatedBy, note = null) {
-    const exchange = await Exchange.findById(id);
-    if (!exchange) throw new Error("Exchange not found");
+  // ==================== UPDATE ====================
 
-    exchange.status = status;
-    exchange.statusHistory.push({
-      status,
-      updatedBy,
-      note,
-      timestamp: new Date(),
-    });
-
-    await exchange.save();
-    // Return the populated document
+  async update(id, updateData) {
+    await Exchange.findByIdAndUpdate(id, updateData);
     return this.findById(id);
   }
 
-  async updateMeetingDetails(id, meetingDetails) {
-    return Exchange.findByIdAndUpdate(
-      id,
-      {
-        meetingDetails,
-        status: "scheduled", // Auto-transition to scheduled when meeting is set
-        $push: {
-          statusHistory: {
-            status: "scheduled",
-            timestamp: new Date(),
-            note: "Meeting scheduled",
-          },
-        },
-      },
-      { new: true }
-    )
-      .populate("giver", "username fullName avatar")
-      .populate("receiver", "username fullName avatar")
-      .populate("post", "title image category")
-      .lean();
+  // ==================== DELETE ====================
+
+  async delete(id) {
+    return Exchange.findByIdAndDelete(id);
   }
 
-  async addRating(id, isGiver, rating) {
-    const updateField = isGiver
-      ? "rating.giverRating"
-      : "rating.receiverRating";
+  // ==================== STATISTICS ====================
 
-    const update = {
-      [updateField]: {
-        ...rating,
-        ratedAt: new Date(),
-      },
+  async countByUser(userId) {
+    const [asGiver, asReceiver] = await Promise.all([
+      Exchange.countDocuments({
+        giver: userId,
+        status: "completed",
+      }),
+      Exchange.countDocuments({
+        receiver: userId,
+        status: "completed",
+      }),
+    ]);
+
+    return {
+      itemsDonated: asGiver,
+      itemsReceived: asReceiver,
+      total: asGiver + asReceiver,
     };
-
-    return Exchange.findByIdAndUpdate(id, { $set: update }, { new: true })
-      .populate("giver", "username fullName avatar")
-      .populate("receiver", "username fullName avatar")
-      .populate("post", "title image category")
-      .lean();
-  }
-
-  async cancel(id, userId, reason) {
-    return Exchange.findByIdAndUpdate(
-      id,
-      {
-        status: "cancelled",
-        cancelledBy: userId,
-        cancelReason: reason,
-        $push: {
-          statusHistory: {
-            status: "cancelled",
-            updatedBy: userId,
-            note: reason,
-            timestamp: new Date(),
-          },
-        },
-      },
-      { new: true }
-    )
-      .populate("giver", "username fullName avatar")
-      .populate("receiver", "username fullName avatar")
-      .populate("post", "title image category")
-      .lean();
   }
 }
 

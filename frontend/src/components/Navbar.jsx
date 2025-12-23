@@ -3,12 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import { Button } from "./ui/button";
-import { Heart, LogOut, User, MessageSquare } from "lucide-react";
+import { Heart, LogOut, User, MessageSquare, Bell } from "lucide-react";
+import NotificationDropdown from "./NotificationDropdown";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { socket, connected, getTotalUnreadCount } = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(2); // Mock count
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,6 +60,28 @@ export default function Navbar() {
             {user ? (
               <>
                 <span className="text-gray-700">Hello, {user.username}</span>
+
+                {/* Notifications */}
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="relative"
+                    onClick={() => setShowNotifications(!showNotifications)}
+                  >
+                    <Bell className="size-4" />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full size-5 flex items-center justify-center font-bold">
+                        {notificationCount > 99 ? "99+" : notificationCount}
+                      </span>
+                    )}
+                  </Button>
+                  <NotificationDropdown
+                    isOpen={showNotifications}
+                    onClose={() => setShowNotifications(false)}
+                  />
+                </div>
+
                 <Link to="/chat">
                   <Button variant="ghost" size="sm" className="relative">
                     <MessageSquare className="size-4 mr-2" />

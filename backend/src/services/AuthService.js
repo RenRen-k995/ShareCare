@@ -72,16 +72,20 @@ class AuthService {
   }
 
   generateToken(userId) {
-    return jwt.sign(
-      { id: userId },
-      process.env.JWT_SECRET || "your_jwt_secret_key",
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-    );
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET environment variable is required");
+    }
+    return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    });
   }
 
   verifyToken(token) {
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET environment variable is required");
+    }
     try {
-      return jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret_key");
+      return jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
       throw new Error("Invalid or expired token");
     }
@@ -236,6 +240,103 @@ class AuthService {
     await UserRepository.delete(userId);
 
     return { message: "Account deleted successfully" };
+  }
+
+  // Get public user profile by ID
+  async getUserById(userId) {
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user.toPublicJSON ? user.toPublicJSON() : user;
+  }
+
+  // Toggle follow/unfollow user
+  async toggleFollow(currentUserId, targetUserId) {
+    if (currentUserId === targetUserId) {
+      throw new Error("You cannot follow yourself");
+    }
+
+    const currentUser = await UserRepository.findById(currentUserId);
+    const targetUser = await UserRepository.findById(targetUserId);
+
+    if (!currentUser || !targetUser) {
+      throw new Error("User not found");
+    }
+
+    const isFollowing = currentUser.following?.includes(targetUserId);
+
+    if (isFollowing) {
+      // Unfollow
+      currentUser.following = currentUser.following.filter(
+        (id) => id.toString() !== targetUserId
+      );
+      targetUser.followers = targetUser.followers.filter(
+        (id) => id.toString() !== currentUserId
+      );
+    } else {
+      // Follow
+      currentUser.following = currentUser.following || [];
+      currentUser.following.push(targetUserId);
+      targetUser.followers = targetUser.followers || [];
+      targetUser.followers.push(currentUserId);
+    }
+
+    await currentUser.save();
+    await targetUser.save();
+
+    return {
+      isFollowing: !isFollowing,
+      followersCount: targetUser.followers.length,
+      followingCount: currentUser.following.length,
+    };
+  }
+
+  // Toggle save/bookmark post
+  async toggleSavePost(userId, postId) {
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    const isSaved = user.savedPosts?.includes(postId);
+
+    if (isSaved) {
+      // Unsave
+      user.savedPosts = user.savedPosts.filter(
+        (id) => id.toString() !== postId
+      );
+    } else {
+      // Save
+      user.savedPosts = user.savedPosts || [];
+      user.savedPosts.push(postId);
+    }
+
+    await user.save();
+
+    return {
+      isSaved: !isSaved,
+      savedPosts: user.savedPosts,
+    };
+  }
+
+  // Get saved posts
+  async getSavedPosts(userId) {
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const posts = await Post.find({ _id: { $in: user.savedPosts || [] } })
+      .populate("author", "username fullName avatar")
+      .sort({ createdAt: -1 });
+
+    return posts;
   }
 }
 

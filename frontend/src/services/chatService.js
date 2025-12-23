@@ -25,6 +25,20 @@ export const chatService = {
     const response = await api.get("/chat/unread-count");
     return response.data;
   },
+
+  // Search messages in a chat
+  async searchMessages(chatId, query) {
+    const response = await api.get(`/chat/${chatId}/search`, {
+      params: { q: query },
+    });
+    return response.data;
+  },
+
+  // Get link preview
+  async getLinkPreview(url) {
+    const response = await api.get("/chat/link-preview", { params: { url } });
+    return response.data;
+  },
 };
 
 export default chatService;
