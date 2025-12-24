@@ -7,6 +7,8 @@ import exchangeService from "../../services/exchangeService";
 import MessageInput from "./MessageInput";
 import ExchangeWidget from "./ExchangeWidget";
 import ExchangeRequestModal from "./ExchangeRequestModal";
+import LinkPreview, { TextWithLinks } from "./LinkPreview";
+import { extractUrls } from "../../utils/urlUtils";
 import { Avatar } from "../common";
 import { getFileUrl } from "../../constants";
 import { format } from "../../lib/utils";
@@ -20,11 +22,30 @@ import {
   Smile,
   Trash2,
   MoreVertical,
+  ChevronUp,
+  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
+// Helper function to highlight search terms in text
+const highlightSearchTerm = (text, term) => {
+  if (!term || !text) return text;
+  const regex = new RegExp(`(${term})`, "gi");
+  const parts = text.split(regex);
+  return parts.map((part, i) =>
+    regex.test(part) ? (
+      <mark key={i} className="px-0.5 bg-yellow-300 rounded">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+};
 
 export default function ChatWindow({ chat, onBack }) {
   const [searchParams] = useSearchParams();
@@ -36,6 +57,9 @@ export default function ChatWindow({ chat, onBack }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(null);
   const [exchange, setExchange] = useState(null);
   const [isExchangeDismissed, setIsExchangeDismissed] = useState(false);
@@ -335,13 +359,14 @@ export default function ChatWindow({ chat, onBack }) {
   }, [hasMore, loading, page]);
 
   const scrollToMessage = (messageId) => {
+    setHighlightedMessageId(messageId);
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      messageElement.classList.add("highlight-message");
+      // Clear highlight after animation
       setTimeout(() => {
-        messageElement.classList.remove("highlight-message");
-      }, 2000);
+        setHighlightedMessageId(null);
+      }, 3000);
     }
   };
 
@@ -357,13 +382,28 @@ export default function ChatWindow({ chat, onBack }) {
     }
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
-    if (searchQuery.trim() && socket && chat) {
-      socket.emit("chat:search", {
-        query: searchQuery.trim(),
-        chatId: chat._id,
-      });
+    if (!searchQuery.trim() || searchQuery.trim().length < 2 || !chat) return;
+
+    setSearchLoading(true);
+    try {
+      const result = await chatService.searchMessages(
+        chat._id,
+        searchQuery.trim()
+      );
+      setSearchResults(result.messages || []);
+      setCurrentSearchIndex(0);
+
+      // Auto-jump to first result
+      if (result.messages?.length > 0) {
+        scrollToMessage(result.messages[0]._id);
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -371,6 +411,23 @@ export default function ChatWindow({ chat, onBack }) {
     setSearchQuery("");
     setSearchResults([]);
     setShowSearch(false);
+    setCurrentSearchIndex(0);
+    setHighlightedMessageId(null);
+  };
+
+  const navigateSearchResult = (direction) => {
+    if (searchResults.length === 0) return;
+
+    let newIndex;
+    if (direction === "next") {
+      newIndex = (currentSearchIndex + 1) % searchResults.length;
+    } else {
+      newIndex =
+        (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+    }
+
+    setCurrentSearchIndex(newIndex);
+    scrollToMessage(searchResults[newIndex]._id);
   };
 
   const renderMessage = (message, index) => {
@@ -384,7 +441,13 @@ export default function ChatWindow({ chat, onBack }) {
       <div
         key={message._id}
         id={`message-${message._id}`}
-        className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}
+        className={`flex gap-2 transition-all duration-500 ${
+          isMine ? "justify-end" : "justify-start"
+        } ${
+          highlightedMessageId === message._id
+            ? "bg-yellow-100 -mx-2 px-2 py-1 rounded-lg ring-2 ring-yellow-400"
+            : ""
+        }`}
       >
         {showAvatar && (
           <div className="flex-shrink-0">
@@ -419,13 +482,33 @@ export default function ChatWindow({ chat, onBack }) {
             {/* Action Buttons - Only show for non-deleted messages */}
             {!message.isDeleted && (
               <div className="flex gap-1">
-                {/* Reaction Button */}
-                <button
-                  onClick={() => setShowEmojiPicker(message._id)}
-                  className="flex-shrink-0 transition-opacity bg-white border border-gray-200 rounded-full opacity-0 group-hover:opacity-100 p-1.5 shadow-sm hover:bg-gray-50"
-                >
-                  <Smile size={14} className="text-gray-600" />
-                </button>
+                {/* Reaction Button with Emoji Picker */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowEmojiPicker(message._id)}
+                    className="flex-shrink-0 transition-opacity bg-white border border-gray-200 rounded-full opacity-0 group-hover:opacity-100 p-1.5 shadow-sm hover:bg-gray-50"
+                  >
+                    <Smile size={18} className="text-gray-600" />
+                  </button>
+
+                  {/* Emoji Picker - Above reaction button */}
+                  {showEmojiPicker === message._id && (
+                    <div
+                      ref={emojiPickerRef}
+                      className="absolute z-50 flex gap-1 p-2 mb-2 -translate-x-1/2 bg-white border border-gray-200 shadow-lg bottom-full left-1/2 rounded-xl"
+                    >
+                      {QUICK_EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => handleReaction(message._id, emoji)}
+                          className="p-2 text-xl transition-transform rounded-lg hover:bg-gray-100 hover:scale-110"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Delete Button - Only for own messages */}
                 {isMine && (
@@ -455,26 +538,6 @@ export default function ChatWindow({ chat, onBack }) {
                     <Trash2 size={14} />
                     <span>Delete</span>
                   </button>
-                </div>
-              )}
-
-              {/* Emoji Picker - Above message */}
-              {showEmojiPicker === message._id && !message.isDeleted && (
-                <div
-                  ref={emojiPickerRef}
-                  className={`absolute ${
-                    isMine ? "left-0" : "right-0"
-                  } bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 flex gap-1 z-50`}
-                >
-                  {QUICK_EMOJIS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleReaction(message._id, emoji)}
-                      className="p-2 text-xl transition-transform rounded-lg hover:bg-gray-100 hover:scale-110"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
                 </div>
               )}
 
@@ -514,20 +577,27 @@ export default function ChatWindow({ chat, onBack }) {
                       href={getFileUrl(message.fileUrl)}
                       target="_blank"
                       rel="noreferrer"
-                      className={`flex items-center gap-2 mb-1 p-2 rounded-lg text-sm ${
+                      className={`flex items-center gap-3 p-3 rounded-2xl text-base shadow-sm ${
                         isMine
-                          ? "bg-gradient-to-r from-emerald-300 to-teal-400 hover:from-emerald-400 hover:to-teal-500 text-white"
-                          : "bg-gray-300 hover:bg-gray-400"
+                          ? "bg-emerald-500 hover:bg-emerald-600 text-white rounded-br-sm"
+                          : "bg-white border border-gray-100 hover:bg-gray-50 rounded-bl-sm"
                       }`}
                     >
-                      <div className="p-1.5 bg-white rounded-full text-emerald-500">
-                        <FileText size={16} />
+                      <div
+                        className={`p-2 rounded-full ${
+                          isMine ? "bg-white/20" : "bg-emerald-100"
+                        }`}
+                      >
+                        <FileText
+                          size={18}
+                          className={isMine ? "text-white" : "text-emerald-600"}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">
                           {message.fileName || "Document"}
                         </p>
-                        <p className="text-xs opacity-80">
+                        <p className="text-sm opacity-80">
                           {(message.fileSize / 1024).toFixed(0)} KB
                         </p>
                       </div>
@@ -537,19 +607,39 @@ export default function ChatWindow({ chat, onBack }) {
                   {/* Text messages with bubble */}
                   {message.messageType !== "image" &&
                     message.messageType !== "file" && (
-                      <div
-                        className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${
-                          isMine
-                            ? "bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-br-none"
-                            : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
-                        }`}
-                      >
-                        {/* Text Content */}
-                        {message.content && (
-                          <p className="leading-relaxed break-words whitespace-pre-wrap">
-                            {message.content}
-                          </p>
-                        )}
+                      <div>
+                        <div
+                          className={`px-4 py-2.5 rounded-2xl shadow-sm ${
+                            isMine
+                              ? "bg-emerald-500 text-white rounded-br-sm"
+                              : "bg-white text-gray-800 border border-gray-100 rounded-bl-sm"
+                          }`}
+                        >
+                          {/* Text Content with clickable links */}
+                          {message.content && (
+                            <p className="text-base leading-relaxed break-words whitespace-pre-wrap">
+                              <TextWithLinks
+                                text={message.content}
+                                className={
+                                  isMine
+                                    ? "text-white [&_a]:text-blue-200 [&_a]:hover:text-white"
+                                    : ""
+                                }
+                              />
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Link Preview - Only for received messages to avoid clutter */}
+                        {!isMine &&
+                          message.content &&
+                          extractUrls(message.content).length > 0 && (
+                            <div className="mt-1 max-w-xs">
+                              <LinkPreview
+                                url={extractUrls(message.content)[0]}
+                              />
+                            </div>
+                          )}
                       </div>
                     )}
 
@@ -601,24 +691,24 @@ export default function ChatWindow({ chat, onBack }) {
           </div>
 
           {/* Timestamp & Status */}
-          <div className="flex items-center gap-1 mt-1 mr-1 text-[10px] text-gray-400">
+          <div className="flex items-center gap-1.5 mt-1.5 px-1 text-xs text-gray-400">
             <span>{format(message.createdAt, "p")}</span>
             {isMine && (
               <>
                 {message.readBy?.length > 1 ? (
                   <CheckCheck
-                    size={12}
+                    size={14}
                     className="text-blue-500"
                     title="Read"
                   />
                 ) : message.isDelivered ? (
                   <CheckCheck
-                    size={12}
+                    size={14}
                     className="text-gray-400"
                     title="Delivered"
                   />
                 ) : (
-                  <Check size={12} className="text-gray-400" title="Sent" />
+                  <Check size={14} className="text-gray-400" title="Sent" />
                 )}
               </>
             )}
@@ -630,13 +720,33 @@ export default function ChatWindow({ chat, onBack }) {
 
   if (!chat)
     return (
-      <div className="flex items-center justify-center h-full text-gray-400">
-        Select a conversation
+      <div className="flex flex-col items-center justify-center h-full bg-gray-50/30">
+        <div className="flex items-center justify-center w-20 h-20 mb-4 bg-gray-100 rounded-full">
+          <svg
+            className="w-10 h-10 text-gray-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+        </div>
+        <p className="text-lg font-medium text-gray-400">
+          Select a conversation
+        </p>
+        <p className="mt-1 text-sm text-gray-300">
+          Choose a chat from the list to start messaging
+        </p>
       </div>
     );
 
   return (
-    <div className="flex flex-col h-full max-h-full bg-[#F5F7F7] overflow-hidden">
+    <div className="flex flex-col h-full max-h-full overflow-hidden bg-gray-50">
       {/* Connection Status Banner */}
       {connectionStatus !== "connected" && (
         <div
@@ -655,15 +765,15 @@ export default function ChatWindow({ chat, onBack }) {
       )}
 
       {/* Header */}
-      <div className="z-10 flex items-center justify-between flex-shrink-0 px-6 py-3 bg-white border-b border-gray-100 shadow-sm">
-        <div className="flex items-center gap-3">
+      <div className="z-10 flex items-center justify-between flex-shrink-0 px-5 py-4 bg-white">
+        <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            className="-ml-2 lg:hidden"
+            className="-ml-2 rounded-full lg:hidden hover:bg-gray-100"
             onClick={onBack}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Button>
           <Avatar
             src={otherUser?.avatar}
@@ -674,10 +784,16 @@ export default function ChatWindow({ chat, onBack }) {
             isOnline={isOnline}
           />
           <div>
-            <h3 className="font-bold text-gray-900">
+            <h3 className="text-lg font-bold text-gray-800">
               {otherUser?.fullName || otherUser?.username}
             </h3>
-            <p className="text-xs text-gray-500">
+            <p
+              className={`text-sm ${
+                typingUsers.size > 0
+                  ? "text-emerald-500 font-medium"
+                  : "text-gray-500"
+              }`}
+            >
               {typingUsers.size > 0
                 ? "Typing..."
                 : isOnline
@@ -690,24 +806,38 @@ export default function ChatWindow({ chat, onBack }) {
           variant="ghost"
           size="icon"
           onClick={() => setShowSearch(!showSearch)}
+          className="rounded-full hover:bg-gray-100"
         >
-          <Search className="w-5 h-5 text-gray-400" />
+          <Search className="w-5 h-5 text-gray-500" />
         </Button>
       </div>
 
       {/* Search Bar */}
       {showSearch && (
-        <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50">
-          <form onSubmit={handleSearch} className="flex flex-1 gap-2">
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search messages..."
-              className="flex-1"
-            />
-            <Button type="submit" size="sm">
-              Search
+        <div className="px-4 py-3 border-b bg-white shadow-sm">
+          <form onSubmit={handleSearch} className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute w-4 h-4 text-gray-400 -translate-y-1/2 left-3 top-1/2" />
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search messages... (min 2 characters)"
+                className="pl-10 pr-4"
+                autoFocus
+              />
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={searchLoading || searchQuery.trim().length < 2}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {searchLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Search"
+              )}
             </Button>
             <Button
               type="button"
@@ -723,40 +853,77 @@ export default function ChatWindow({ chat, onBack }) {
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="px-4 py-2 border-b bg-yellow-50">
-          <p className="mb-2 text-sm text-gray-600">
-            Found {searchResults.length} message
-            {searchResults.length > 1 ? "s" : ""}
-          </p>
-          <div className="space-y-1 overflow-y-auto max-h-32">
-            {searchResults
-              .slice(0, 10)
-              .reverse()
-              .map((msg) => (
-                <button
-                  key={msg._id}
-                  onClick={() => scrollToMessage(msg._id)}
-                  className="w-full p-2 text-xs text-left bg-white rounded hover:bg-gray-100"
-                >
-                  <span className="font-medium">{msg.sender?.username}: </span>
-                  <span className="text-gray-600">
-                    {msg.content?.substring(0, 50)}...
+        <div className="px-4 py-3 border-b bg-gradient-to-r from-amber-50 to-yellow-50">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-700">
+              Found{" "}
+              <span className="font-bold text-emerald-600">
+                {searchResults.length}
+              </span>{" "}
+              result{searchResults.length > 1 ? "s" : ""} for "{searchQuery}"
+            </p>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500 mr-2">
+                {currentSearchIndex + 1} / {searchResults.length}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                onClick={() => navigateSearchResult("prev")}
+              >
+                <ChevronUp className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                onClick={() => navigateSearchResult("next")}
+              >
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1 overflow-y-auto max-h-40">
+            {searchResults.map((msg, index) => (
+              <button
+                key={msg._id}
+                onClick={() => {
+                  setCurrentSearchIndex(index);
+                  scrollToMessage(msg._id);
+                }}
+                className={`w-full p-2.5 text-sm text-left rounded-lg transition-colors ${
+                  index === currentSearchIndex
+                    ? "bg-emerald-100 border border-emerald-300"
+                    : "bg-white hover:bg-gray-100 border border-gray-200"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-gray-800">
+                    {msg.sender?.username}
                   </span>
-                </button>
-              ))}
+                  <span className="text-xs text-gray-400">
+                    {format(msg.createdAt, "MMM d, p")}
+                  </span>
+                </div>
+                <span className="text-gray-600 line-clamp-1">
+                  {highlightSearchTerm(msg.content, searchQuery)}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       )}
 
       {/* Messages Area */}
       <div
-        className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+        className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-gray-50"
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
         {/* Sticky Exchange Widget - Only show if this chat is related to a post */}
         {chat?.post && !isExchangeDismissed && (
-          <div className="sticky top-0 z-10 pb-0 bg-white">
+          <div className="sticky top-0 z-10 pb-0 bg-white shadow-sm">
             <ExchangeWidget
               post={chat.post}
               exchange={exchange}
@@ -766,25 +933,25 @@ export default function ChatWindow({ chat, onBack }) {
           </div>
         )}
 
-        <div className="p-4">
+        <div className="p-5">
           {loading && (
-            <div className="py-4 text-xs text-center text-gray-400">
+            <div className="py-4 text-sm text-center text-gray-400">
               Loading history...
             </div>
           )}
 
           {/* Messages List */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {messages.map((msg, i) => renderMessage(msg, i))}
           </div>
 
           {/* Typing Indicator */}
           {typingUsers.size > 0 && (
-            <div className="flex items-center gap-2 mt-2 ml-10 text-xs italic text-gray-400">
+            <div className="flex items-center gap-2 mt-3 ml-10 text-sm italic text-gray-500">
               <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce"></span>
+                <span className="w-2 h-2 delay-75 rounded-full bg-emerald-400 animate-bounce"></span>
+                <span className="w-2 h-2 delay-150 rounded-full bg-emerald-400 animate-bounce"></span>
               </div>
               Typing...
             </div>
@@ -794,7 +961,7 @@ export default function ChatWindow({ chat, onBack }) {
       </div>
 
       {/* Input Area */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 border-t border-gray-100">
         <MessageInput chatId={chat._id} onMessageSent={scrollToBottom} />
       </div>
 

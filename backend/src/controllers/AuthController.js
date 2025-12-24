@@ -144,6 +144,52 @@ class AuthController {
       next(error);
     }
   }
+
+  // Get public user profile by ID
+  async getUserById(req, res, next) {
+    try {
+      const user = await AuthService.getUserById(req.params.userId);
+      res.json({ user });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Toggle follow user
+  async toggleFollow(req, res, next) {
+    try {
+      const result = await AuthService.toggleFollow(
+        req.user.id,
+        req.params.userId
+      );
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Toggle save/bookmark post
+  async toggleSavePost(req, res, next) {
+    try {
+      const result = await AuthService.toggleSavePost(
+        req.user.id,
+        req.params.postId
+      );
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get saved posts
+  async getSavedPosts(req, res, next) {
+    try {
+      const posts = await AuthService.getSavedPosts(req.user.id);
+      res.json({ posts });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new AuthController();

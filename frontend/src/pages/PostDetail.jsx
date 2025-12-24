@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import DOMPurify from "dompurify";
 import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
 import commentService from "../services/commentService";
@@ -264,7 +265,7 @@ export default function PostDetail() {
                 post.author?._id !== user.id && (
                   <button
                     onClick={handleContactToReceive}
-                    className="flex items-center gap-2 px-6 py-2 text-xs font-semibold text-white transition-all bg-black rounded-full shadow-md hover:bg-gray-800 hover:shadow-lg"
+                    className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white transition-all bg-black rounded-full shadow-md hover:bg-gray-800 hover:shadow-lg"
                   >
                     <Send className="w-4 h-4" />
                     <span>Contact</span>
@@ -308,7 +309,42 @@ export default function PostDetail() {
 
           <div
             className="mb-12 leading-relaxed prose prose-lg text-gray-800 text-lg max-w-none [&_img]:max-w-[600px] [&_img]:w-[60%] [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-6 [&_img]:mx-auto [&_img]:block [&_img]:shadow-md [&_img]:border [&_img]:border-gray-100"
-            dangerouslySetInnerHTML={{ __html: post.description }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(post.description, {
+                ALLOWED_TAGS: [
+                  "p",
+                  "br",
+                  "strong",
+                  "em",
+                  "u",
+                  "s",
+                  "h1",
+                  "h2",
+                  "h3",
+                  "h4",
+                  "h5",
+                  "h6",
+                  "ul",
+                  "ol",
+                  "li",
+                  "blockquote",
+                  "a",
+                  "img",
+                  "span",
+                  "div",
+                ],
+                ALLOWED_ATTR: [
+                  "href",
+                  "src",
+                  "alt",
+                  "class",
+                  "style",
+                  "target",
+                  "rel",
+                ],
+                ALLOW_DATA_ATTR: false,
+              }),
+            }}
           />
 
           {/* Main Post Reaction Buttons */}
@@ -343,7 +379,6 @@ export default function PostDetail() {
           ref={commentInputRef}
           className="bg-white rounded-[2rem] p-6 mb-6 shadow-sm border border-gray-100"
         >
-          {/* ... Input Code ... */}
           <div className="flex gap-4">
             <Avatar
               src={user?.avatar}

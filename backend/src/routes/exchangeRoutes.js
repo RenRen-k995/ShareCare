@@ -10,45 +10,107 @@ router.use(authenticate);
 router.use(apiLimiter);
 
 /**
- * @route POST /api/exchanges
- * @desc Create a new exchange request from a chat
+ * Exchange Routes - Simplified for Donation Platform
+ *
+ * WORKFLOW:
+ * 1. POST /              - Receiver gửi yêu cầu nhận vật phẩm
+ * 2. PATCH /:id/accept   - Giver chấp nhận yêu cầu
+ * 3. PATCH /:id/decline  - Giver từ chối yêu cầu
+ * 4. PATCH /:id/complete - Một trong 2 bên xác nhận đã giao/nhận
+ * 5. PATCH /:id/cancel   - Một trong 2 bên hủy
  */
-router.post("/", ExchangeController.createExchange);
+
+// ==================== QUERY ROUTES ====================
 
 /**
- * @route GET /api/exchanges/my-exchanges
- * @desc Get all exchanges for the current user (as giver or receiver)
+ * GET /api/exchanges/my-exchanges
+ * Lấy danh sách exchanges của user hiện tại
+ * Query: ?status=requested,accepted,completed,cancelled,declined
  */
-router.get("/my-exchanges", ExchangeController.getUserExchanges);
+router.get(
+  "/my-exchanges",
+  ExchangeController.getUserExchanges.bind(ExchangeController)
+);
 
 /**
- * @route GET /api/exchanges/chat/:chatId
- * @desc Get the active exchange associated with a specific chat room
+ * GET /api/exchanges/chat/:chatId
+ * Lấy exchange theo chat ID
  */
-router.get("/chat/:chatId", ExchangeController.getExchangeByChat);
+router.get(
+  "/chat/:chatId",
+  ExchangeController.getExchangeByChat.bind(ExchangeController)
+);
+
+// ==================== CREATE ROUTE ====================
 
 /**
- * @route PATCH /api/exchanges/:exchangeId/status
- * @desc Update the status of an exchange (accept, decline, complete, etc.)
+ * POST /api/exchanges
+ * Tạo yêu cầu nhận vật phẩm (RECEIVER only)
+ * Body: { chatId, postId, message? }
  */
-router.patch("/:exchangeId/status", ExchangeController.updateStatus);
+router.post("/", ExchangeController.createExchange.bind(ExchangeController));
+
+// ==================== ACTION ROUTES ====================
 
 /**
- * @route PATCH /api/exchanges/:exchangeId/schedule
- * @desc Schedule or reschedule the meeting details
+ * PATCH /api/exchanges/:exchangeId/accept
+ * Chấp nhận yêu cầu (GIVER only)
  */
-router.patch("/:exchangeId/schedule", ExchangeController.scheduleMeeting);
+router.patch(
+  "/:exchangeId/accept",
+  ExchangeController.acceptExchange.bind(ExchangeController)
+);
 
 /**
- * @route POST /api/exchanges/:exchangeId/rate
- * @desc Rate the other party after completion
+ * PATCH /api/exchanges/:exchangeId/decline
+ * Từ chối yêu cầu (GIVER only)
+ * Body: { reason? }
  */
-router.post("/:exchangeId/rate", ExchangeController.rateExchange);
+router.patch(
+  "/:exchangeId/decline",
+  ExchangeController.declineExchange.bind(ExchangeController)
+);
 
 /**
- * @route PATCH /api/exchanges/:exchangeId/cancel
- * @desc Cancel an exchange
+ * PATCH /api/exchanges/:exchangeId/complete
+ * Xác nhận đã giao/nhận thành công (Both)
+ * Body: { note? }
  */
-router.patch("/:exchangeId/cancel", ExchangeController.cancelExchange);
+router.patch(
+  "/:exchangeId/complete",
+  ExchangeController.completeExchange.bind(ExchangeController)
+);
+
+/**
+ * PATCH /api/exchanges/:exchangeId/cancel
+ * Hủy yêu cầu/giao dịch (Both)
+ * Body: { reason?, note? }
+ */
+router.patch(
+  "/:exchangeId/cancel",
+  ExchangeController.cancelExchange.bind(ExchangeController)
+);
+
+// ==================== OPTIONAL ROUTES ====================
+
+/**
+ * PATCH /api/exchanges/:exchangeId/meeting
+ * Cập nhật thông tin hẹn gặp (Both)
+ * Body: { meetingDetails: { scheduledTime?, location?, notes? } }
+ */
+router.patch(
+  "/:exchangeId/meeting",
+  ExchangeController.updateMeetingDetails.bind(ExchangeController)
+);
+
+/**
+ * PATCH /api/exchanges/:exchangeId/status
+ * Legacy update status endpoint (backward compatibility)
+ * Body: { status, note? }
+ */
+router.patch(
+  "/:exchangeId/status",
+  ExchangeController.updateStatus.bind(ExchangeController)
+);
 
 export default router;

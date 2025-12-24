@@ -12,6 +12,9 @@ const router = express.Router();
 router.post("/register", authLimiter, AuthController.register);
 router.post("/login", authLimiter, AuthController.login);
 
+// Get public user profile by ID (public route)
+router.get("/users/:userId", apiLimiter, AuthController.getUserById);
+
 // Avatar upload endpoint
 router.post(
   "/upload-avatar",
@@ -58,6 +61,30 @@ router.delete(
   apiLimiter,
   authenticate,
   AuthController.deleteAccount
+);
+
+// Follow/unfollow user
+router.post(
+  "/users/:userId/follow",
+  apiLimiter,
+  authenticate,
+  AuthController.toggleFollow
+);
+
+// Save/unsave (bookmark) post
+router.post(
+  "/posts/:postId/save",
+  apiLimiter,
+  authenticate,
+  AuthController.toggleSavePost
+);
+
+// Get saved posts
+router.get(
+  "/saved-posts",
+  apiLimiter,
+  authenticate,
+  AuthController.getSavedPosts
 );
 
 export default router;

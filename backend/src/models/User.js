@@ -55,11 +55,30 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // NEW FIELD: Track total likes received across all posts/comments
     totalLikes: {
       type: Number,
       default: 0,
     },
+    // Follow system
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    following: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    // Saved posts (bookmarks)
+    savedPosts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+      },
+    ],
     isAdmin: {
       type: Boolean,
       default: false,
@@ -107,7 +126,10 @@ userSchema.methods.toPublicJSON = function () {
     dateOfBirth: this.dateOfBirth,
     rating: this.rating,
     ratingCount: this.ratingCount,
-    totalLikes: this.totalLikes || 0, // Include totalLikes in public profile
+    totalLikes: this.totalLikes || 0,
+    followers: this.followers || [],
+    following: this.following || [],
+    savedPosts: this.savedPosts || [],
     isAdmin: this.isAdmin,
     createdAt: this.createdAt,
   };

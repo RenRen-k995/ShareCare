@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
+import authService from "../services/authService";
 import MainLayout from "../components/layout/MainLayout";
 import PostCard from "../components/PostCard";
 import { Avatar, PageLoadingState, EmptyState } from "../components/common";
@@ -12,13 +13,16 @@ import {
   Heart,
   MessageSquare,
   User as UserIcon,
+  Bookmark,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 
 export default function Profile() {
   const { user } = useAuth();
   const [userPosts, setUserPosts] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [savedLoading, setSavedLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("posts");
 
   useEffect(() => {
@@ -41,8 +45,31 @@ export default function Profile() {
     fetchUserPosts();
   }, [user]);
 
+  // Fetch saved posts when tab changes to saved
+  useEffect(() => {
+    const fetchSavedPosts = async () => {
+      if (activeTab === "saved" && user) {
+        try {
+          setSavedLoading(true);
+          const data = await authService.getSavedPosts();
+          setSavedPosts(data.posts || []);
+        } catch (error) {
+          console.error("Failed to fetch saved posts", error);
+        } finally {
+          setSavedLoading(false);
+        }
+      }
+    };
+
+    fetchSavedPosts();
+  }, [activeTab, user]);
+
   const handleDeletePost = (postId) => {
     setUserPosts((prevPosts) => prevPosts.filter((p) => p._id !== postId));
+  };
+
+  const handleRemoveSavedPost = (postId) => {
+    setSavedPosts((prevPosts) => prevPosts.filter((p) => p._id !== postId));
   };
 
   if (!user) return null;
@@ -156,11 +183,15 @@ export default function Profile() {
                   <span>Likes</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-xl font-bold text-gray-900">3</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {user.following?.length || 0}
+                  </span>
                   <span>Following</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-xl font-bold text-gray-900">0</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {user.followers?.length || 0}
+                  </span>
                   <span>Followers</span>
                 </div>
               </div>
@@ -216,24 +247,54 @@ export default function Profile() {
             </div>
 
             {/* Feed Content */}
-            {loading ? (
-              <PageLoadingState message="Loading posts..." />
-            ) : userPosts.length > 0 ? (
-              <div className="space-y-4">
-                {userPosts.map((post) => (
-                  <PostCard
-                    key={post._id}
-                    post={post}
-                    onDelete={handleDeletePost}
-                  />
-                ))}
-              </div>
-            ) : (
+            {activeTab === "posts" &&
+              (loading ? (
+                <PageLoadingState message="Loading posts..." />
+              ) : userPosts.length > 0 ? (
+                <div className="space-y-4">
+                  {userPosts.map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      onDelete={handleDeletePost}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No posts yet"
+                  className="rounded-[1.2rem] border border-dashed border-gray-200"
+                />
+              ))}
+
+            {activeTab === "comments" && (
               <EmptyState
-                title="No posts yet"
+                title="No comments yet"
                 className="rounded-[1.2rem] border border-dashed border-gray-200"
               />
             )}
+
+            {activeTab === "saved" &&
+              (savedLoading ? (
+                <PageLoadingState message="Loading saved posts..." />
+              ) : savedPosts.length > 0 ? (
+                <div className="space-y-4">
+                  {savedPosts.map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      onDelete={handleRemoveSavedPost}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={<Bookmark className="w-12 h-12 text-gray-300" />}
+                  title="No saved posts"
+                  description="Posts you save will appear here"
+                  className="rounded-[1.2rem] border border-dashed border-gray-200"
+                />
+              ))}
           </div>
 
           {/* RIGHT COLUMN: Info & Widgets (1/3 width) */}

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "./ui/badge";
 import {
   ThumbsUp,
@@ -7,10 +7,12 @@ import {
   MoreHorizontal,
   Bookmark,
   Plus,
+  Check,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import postService from "../services/postService";
 import reportService from "../services/reportService";
+import authService from "../services/authService";
 import {
   extractTextFromHtml,
   extractFirstLineFromHtml,
@@ -19,7 +21,8 @@ import { formatTimeAgo } from "../lib/utils";
 import { getCategoryStyles, getImageUrl } from "../constants";
 
 export default function PostCard({ post, onUpdate, onDelete }) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
 
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
@@ -29,6 +32,20 @@ export default function PostCard({ post, onUpdate, onDelete }) {
   const [localIsLiked, setLocalIsLiked] = useState(
     user && post.reactions?.some((r) => r.user === user.id)
   );
+
+  // Follow/Save State
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+
+  // Check if already following and saved
+  useEffect(() => {
+    if (user && post.author?._id) {
+      setIsFollowing(user.following?.includes(post.author._id));
+      setIsSaved(user.savedPosts?.includes(post._id));
+    }
+  }, [user, post.author?._id, post._id]);
 
   const handleReaction = async (e) => {
     e.preventDefault();
@@ -85,6 +102,71 @@ export default function PostCard({ post, onUpdate, onDelete }) {
     }
   };
 
+  const handleAvatarClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (post.author?._id) {
+      // If it's the current user, go to profile, else go to user profile page
+      if (user && post.author._id === user.id) {
+        navigate("/profile");
+      } else {
+        navigate(`/user/${post.author._id}`);
+      }
+    }
+  };
+
+  const handleFollow = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user || !post.author?._id || post.author._id === user.id) return;
+
+    setFollowLoading(true);
+    const previousIsFollowing = isFollowing;
+    setIsFollowing(!previousIsFollowing);
+
+    try {
+      const result = await authService.toggleFollow(post.author._id);
+      // Update user in localStorage
+      const updatedUser = {
+        ...user,
+        following: result.isFollowing
+          ? [...(user.following || []), post.author._id]
+          : (user.following || []).filter((id) => id !== post.author._id),
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      if (updateUser) updateUser(updatedUser);
+    } catch {
+      setIsFollowing(previousIsFollowing);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleSavePost = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return;
+
+    setSaveLoading(true);
+    const previousIsSaved = isSaved;
+    setIsSaved(!previousIsSaved);
+
+    try {
+      const result = await authService.toggleSavePost(post._id);
+      // Update user in localStorage
+      const updatedUser = {
+        ...user,
+        savedPosts: result.savedPosts || [],
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      if (updateUser) updateUser(updatedUser);
+    } catch {
+      setIsSaved(previousIsSaved);
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   return (
     <>
       <Link
@@ -104,7 +186,10 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         {/* --- HEADER --- */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="overflow-hidden bg-gray-100 rounded-full size-12 shrink-0">
+            <button
+              onClick={handleAvatarClick}
+              className="overflow-hidden transition-all bg-gray-100 rounded-full size-12 shrink-0 hover:ring-2 hover:ring-emerald-300"
+            >
               {post.author?.avatar ? (
                 <img
                   src={post.author.avatar}
@@ -116,7 +201,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                   {post.author?.username?.charAt(0).toUpperCase()}
                 </div>
               )}
-            </div>
+            </button>
 
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -152,15 +237,21 @@ export default function PostCard({ post, onUpdate, onDelete }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              className="flex items-center justify-center h-8 text-gray-500 transition-colors bg-[#ECEDED] w-[3.2rem] rounded-xl hover:bg-[#D0D0D0] hover:text-gray-700 hover:shadow"
-            >
-              <Plus className="size-6" />
-            </button>
+            {/* Follow button - only show if not own post */}
+            {user && post.author?._id !== user.id && (
+              <button
+                onClick={handleFollow}
+                disabled={followLoading}
+                className={`flex items-center justify-center h-8 transition-colors w-[3.2rem] rounded-xl hover:shadow bg-[#ECEDED] text-gray-500 hover:bg-[#D0D0D0] hover:text-gray-700"
+                }`}
+              >
+                {isFollowing ? (
+                  <Check className="size-5" />
+                ) : (
+                  <Plus className="size-6" />
+                )}
+              </button>
+            )}
 
             <div className="relative">
               <button
@@ -255,13 +346,15 @@ export default function PostCard({ post, onUpdate, onDelete }) {
           </div>
 
           <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            className="py-2 px-4 text-gray-400 transition-colors rounded-2xl hover:bg-gray-200 bg-[#F6F6F6] hover:text-gray-900"
+            onClick={handleSavePost}
+            disabled={saveLoading}
+            className={`py-2 px-4 transition-colors rounded-2xl ${
+              isSaved
+                ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200"
+                : "text-gray-400 hover:bg-gray-200 bg-[#F6F6F6] hover:text-gray-900"
+            }`}
           >
-            <Bookmark className="size-5" />
+            <Bookmark className={`size-5 ${isSaved ? "fill-current" : ""}`} />
           </button>
         </div>
       </Link>

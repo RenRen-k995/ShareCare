@@ -32,8 +32,8 @@ export default function MainLayout({
         {/* Main Scrollable Area */}
         <main className="relative flex-1 px-6 overflow-y-auto bg-[#F5F7F7] rounded-tl-[1.8rem]">
           {/* Layout Container */}
-          <div className="flex gap-6 max-w-[1440px] mx-auto items-start pl-16">
-            {/* Middle Content (Feed) 
+          <div className="flex gap-10 max-w-[1440px] mx-auto items-start pl-16">
+            {/* Middle Content
                 - If right sidebar is present: max-w-4xl (Standard Feed)
                 - If right sidebar is hidden: w-full (Profile/Full width pages)
             */}
